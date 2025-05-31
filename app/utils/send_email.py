@@ -4,7 +4,7 @@ from ..config import web_short_me
 
 class SendEmail:
     @staticmethod
-    def send_email_verification(user_data, token_email):
+    def send_email_verification(user_data, token_email, otp):
         send_email_task.apply_async(
             args=[
                 "Account Active",
@@ -19,6 +19,7 @@ class SendEmail:
 <body>
     <p>Hello {user_data.username},</p>
     <p>Someone has requested a link to verify your account, and you can do this through the link below.</p>
+    <p>your otp is {otp}.</p>
     <p>
         <a href="{web_short_me}/account-active?token={token_email}">
             Click here to activate your account

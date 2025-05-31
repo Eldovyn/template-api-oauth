@@ -1,4 +1,8 @@
-from ..databases import UserDatabase, AccountActiveDatabase, BlacklistTokenDatabase
+from ..databases import (
+    UserDatabase,
+    AccountActiveDatabase,
+    BlacklistTokenDatabase,
+)
 from flask import jsonify
 from email_validator import validate_email
 from google.auth.transport import requests
@@ -6,6 +10,9 @@ import requests
 from ..utils import AuthJwt, TokenEmailAccountActive, TokenWebAccountActive, SendEmail
 import datetime
 from ..config import provider as PROVIDER
+import string
+import random
+import traceback
 
 
 class LoginController:
@@ -34,68 +41,75 @@ class LoginController:
 
         try:
             errors = {}
-            if not isinstance(provider, str):
-                errors.setdefault("provider", []).append("MUST_TEXT")
             if not provider or (isinstance(provider, str) and provider.isspace()):
                 errors.setdefault("provider", []).append("IS_REQUIRED")
-            if provider not in PROVIDER.split(", "):
-                errors.setdefault("provider", []).append("IS_INVALID")
+            else:
+                if not isinstance(provider, str):
+                    errors.setdefault("provider", []).append("MUST_TEXT")
+                if provider not in PROVIDER.split(", "):
+                    errors.setdefault("provider", []).append("IS_INVALID")
 
             if provider == "google":
-                if not errors:
-                    url = f"https://www.googleapis.com/oauth2/v3/userinfo?access_token={token}"
-                    response = requests.get(url)
-                    resp = response.json()
-                    email = resp["email"]
-                    if not (
-                        user_data := await UserDatabase.get("by_email", email=email)
-                    ):
-                        return (
-                            jsonify(
-                                {
-                                    "errors": {"user": ["NOT_FOUND"]},
-                                    "message": "you are not registered",
-                                }
-                            ),
-                            401,
-                        )
-                    if not user_data.is_active:
-                        return (
-                            jsonify(
-                                {
-                                    "errors": {"user": ["NOT_ACTIVE"]},
-                                    "message": "user is not active",
-                                }
-                            ),
-                            401,
-                        )
-                    if not user_data.provider == "google":
-                        return (
-                            jsonify(
-                                {
-                                    "errors": {"user": ["NOT_FOUND"]},
-                                    "message": "you are not registered",
-                                }
-                            ),
-                            401,
-                        )
-                    access_token = await AuthJwt.generate_jwt(
-                        f"{user_data.id}", int(timestamp.timestamp())
+                if not token or (isinstance(token, str) and token.isspace()):
+                    errors.setdefault("token", []).append("IS_REQUIRED")
+                else:
+                    if not isinstance(token, str):
+                        errors.setdefault("token", []).append("MUST_TEXT")
+                if errors:
+                    return jsonify({"errors": errors, "message": "invalid data"}), 400
+                url = f"https://www.googleapis.com/oauth2/v3/userinfo?access_token={token}"
+                response = requests.get(url)
+                resp = response.json()
+                email = resp["email"]
+                if not (user_data := await UserDatabase.get("by_email", email=email)):
+                    return (
+                        jsonify(
+                            {
+                                "errors": {"user": ["NOT_FOUND"]},
+                                "message": "you are not registered",
+                            }
+                        ),
+                        401,
                     )
+                if not user_data.is_active:
+                    return (
+                        jsonify(
+                            {
+                                "errors": {"user": ["NOT_ACTIVE"]},
+                                "message": "user is not active",
+                            }
+                        ),
+                        401,
+                    )
+                if not user_data.provider == "google":
+                    return (
+                        jsonify(
+                            {
+                                "errors": {"user": ["NOT_FOUND"]},
+                                "message": "you are not registered",
+                            }
+                        ),
+                        401,
+                    )
+                access_token = await AuthJwt.generate_jwt(
+                    f"{user_data.id}", int(timestamp.timestamp())
+                )
             else:
-                if not isinstance(email, str):
-                    errors.setdefault("email", []).append("MUST_TEXT")
                 if not email or (isinstance(email, str) and email.isspace()):
                     errors.setdefault("email", []).append("IS_REQUIRED")
-                if not isinstance(password, str):
-                    errors.setdefault("password", []).append("MUST_TEXT")
+                else:
+                    if not isinstance(email, str):
+                        errors.setdefault("email", []).append("MUST_TEXT")
+                    try:
+                        valid = validate_email(email)
+                        email = valid.email
+                    except:
+                        errors.setdefault("email", []).append("IS_INVALID")
                 if not password or (isinstance(password, str) and password.isspace()):
                     errors.setdefault("password", []).append("IS_REQUIRED")
-                try:
-                    valid = validate_email(email)
-                    email = valid.email
-                except:
-                    errors.setdefault("email", []).append("IS_INVALID")
+                else:
+                    if not isinstance(password, str):
+                        errors.setdefault("password", []).append("MUST_TEXT")
                 if errors:
                     return jsonify({"errors": errors, "message": "invalid data"}), 400
                 if not (user_data := await UserDatabase.get("by_email", email=email)):
@@ -126,14 +140,17 @@ class LoginController:
                     token_email = await TokenEmailAccountActive.insert(
                         f"{user_data.id}", int(timestamp.timestamp())
                     )
+                    karakter = string.ascii_uppercase + string.digits
+                    otp = "".join(random.choices(karakter, k=6))
                     await AccountActiveDatabase.insert(
                         email,
                         token_web,
                         token_email,
+                        otp,
                         int(timestamp.timestamp()),
                         int(expired_at.timestamp()),
                     )
-                    SendEmail.send_email_verification(user_data, token_email)
+                    SendEmail.send_email_verification(user_data, token_email, otp)
                     return (
                         jsonify(
                             {
@@ -176,4 +193,5 @@ class LoginController:
                 201,
             )
         except Exception:
+            traceback.print_exc()
             return jsonify({"message": "invalid request"}), 400

@@ -6,7 +6,7 @@ import datetime
 import random
 
 
-class OtpController:
+class OtpEmailController:
     @staticmethod
     async def otp_email(user, timestamp):
         karakter = string.ascii_uppercase + string.digits

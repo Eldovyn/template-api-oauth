@@ -13,15 +13,16 @@ class ProfileController:
     @staticmethod
     async def update_email(user, email, otp, timestamp):
         errors = {}
-        if not isinstance(email, str):
-            errors.setdefault("email", []).append("MUST_TEXT")
         if not email or (isinstance(email, str) and email.isspace()):
             errors.setdefault("email", []).append("IS_REQUIRED")
-        try:
-            valid = validate_email(email)
-            email = valid.email
-        except:
-            errors.setdefault("email", []).append("IS_INVALID")
+        else:
+            if not isinstance(email, str):
+                errors.setdefault("email", []).append("MUST_TEXT")
+            try:
+                valid = validate_email(email)
+                email = valid.email
+            except:
+                errors.setdefault("email", []).append("IS_INVALID")
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
         if not (
@@ -65,18 +66,22 @@ class ProfileController:
         from ..bcrypt import bcrypt
 
         errors = {}
-        if not isinstance(password, str):
-            errors.setdefault("password", []).append("MUST_TEXT")
         if not password or (isinstance(password, str) and password.isspace()):
             errors.setdefault("password", []).append("IS_REQUIRED")
-        if not isinstance(confirm_password, str):
-            errors.setdefault("confirm_password", []).append("MUST_TEXT")
+        else:
+            if not isinstance(password, str):
+                errors.setdefault("password", []).append("MUST_TEXT")
         if not confirm_password or (
             isinstance(confirm_password, str) and confirm_password.isspace()
         ):
             errors.setdefault("confirm_password", []).append("IS_REQUIRED")
-        if password != confirm_password:
-            errors.setdefault("password_match", []).append("PASSWORD_MISMATCH")
+        else:
+            if not isinstance(confirm_password, str):
+                errors.setdefault("confirm_password", []).append("MUST_TEXT")
+        if password != confirm_password and (
+            password or (isinstance(password, str) and not password.isspace())
+        ):
+            errors.setdefault("password_match", []).append("IS_MISMATCH")
         else:
             if len(password) < 8:
                 errors.setdefault("password_security", []).append("TOO_SHORT")
@@ -129,10 +134,11 @@ class ProfileController:
     @staticmethod
     async def update_username(user, username):
         errors = {}
-        if not isinstance(username, str):
-            errors.setdefault("username", []).append("MUST_TEXT")
         if not username or (isinstance(username, str) and username.isspace()):
             errors.setdefault("username", []).append("IS_REQUIRED")
+        else:
+            if not isinstance(username, str):
+                errors.setdefault("username", []).append("MUST_TEXT")
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
         try:

@@ -7,6 +7,8 @@ import re
 from ..utils import TokenEmailAccountActive, TokenWebAccountActive, SendEmail, AuthJwt
 import datetime
 from ..config import provider as PROVIDER
+import random
+import string
 
 
 class RegisterController:
@@ -22,63 +24,72 @@ class RegisterController:
         try:
             created_at = int(timestamp.timestamp())
             errors = {}
-            if not isinstance(provider, str):
-                errors.setdefault("provider", []).append("MUST_TEXT")
             if not provider or (isinstance(provider, str) and provider.isspace()):
                 errors.setdefault("provider", []).append("IS_REQUIRED")
-            if provider not in PROVIDER.split(", "):
-                errors.setdefault("provider", []).append("IS_INVALID")
+            else:
+                if not isinstance(provider, str):
+                    errors.setdefault("provider", []).append("MUST_TEXT")
+                if provider not in PROVIDER.split(", "):
+                    errors.setdefault("provider", []).append("IS_INVALID")
             if provider == "google":
-                if not isinstance(token, str):
-                    errors.setdefault("token", []).append("MUST_TEXT")
                 if not token or (isinstance(token, str) and token.isspace()):
                     errors.setdefault("token", []).append("IS_REQUIRED")
-                if not errors:
-                    url = f"https://www.googleapis.com/oauth2/v3/userinfo?access_token={token}"
-                    response = requests.get(url)
-                    resp = response.json()
-                    username = resp["name"]
-                    email = resp["email"]
-                    if user_data := await UserDatabase.get("by_email", email=email):
-                        return (
-                            jsonify(
-                                {
-                                    "errors": {"user": ["USER_ALREADY_EXISTS"]},
-                                    "message": "the user already exists",
-                                }
-                            ),
-                            409,
-                        )
-                    result = await UserDatabase.insert(
-                        provider, username, email, None, created_at
+                else:
+                    if not isinstance(token, str):
+                        errors.setdefault("token", []).append("MUST_TEXT")
+                if errors:
+                    return jsonify({"errors": errors, "message": "invalid data"}), 400
+                url = f"https://www.googleapis.com/oauth2/v3/userinfo?access_token={token}"
+                response = requests.get(url)
+                resp = response.json()
+                username = resp["name"]
+                email = resp["email"]
+                if user_data := await UserDatabase.get("by_email", email=email):
+                    return (
+                        jsonify(
+                            {
+                                "errors": {"user": ["USER_ALREADY_EXISTS"]},
+                                "message": "the user already exists",
+                            }
+                        ),
+                        409,
                     )
-                    access_token = await AuthJwt.generate_jwt(result.id, created_at)
+                result = await UserDatabase.insert(
+                    provider, username, email, None, created_at
+                )
+                access_token = await AuthJwt.generate_jwt(result.id, created_at)
             else:
-                if not isinstance(username, str):
-                    errors.setdefault("username", []).append("MUST_TEXT")
                 if not username or (isinstance(username, str) and username.isspace()):
                     errors.setdefault("username", []).append("IS_REQUIRED")
-                if not isinstance(email, str):
-                    errors.setdefault("email", []).append("MUST_TEXT")
+                else:
+                    if not isinstance(username, str):
+                        errors.setdefault("username", []).append("MUST_TEXT")
                 if not email or (isinstance(email, str) and email.isspace()):
                     errors.setdefault("email", []).append("IS_REQUIRED")
-                if not isinstance(password, str):
-                    errors.setdefault("password", []).append("MUST_TEXT")
+                else:
+                    if not isinstance(email, str):
+                        errors.setdefault("email", []).append("MUST_TEXT")
+                    try:
+                        valid = validate_email(email)
+                        email = valid.email
+                    except:
+                        errors.setdefault("email", []).append("IS_INVALID")
                 if not password or (isinstance(password, str) and password.isspace()):
                     errors.setdefault("password", []).append("IS_REQUIRED")
-                if not isinstance(confirm_password, str):
-                    errors.setdefault("confirm_password", []).append("MUST_TEXT")
+                else:
+                    if not isinstance(password, str):
+                        errors.setdefault("password", []).append("MUST_TEXT")
                 if not confirm_password or (
                     isinstance(confirm_password, str) and confirm_password.isspace()
                 ):
                     errors.setdefault("confirm_password", []).append("IS_REQUIRED")
-                try:
-                    valid = validate_email(email)
-                    email = valid.email
-                except:
-                    errors.setdefault("email", []).append("IS_INVALID")
-                if password != confirm_password:
-                    errors.setdefault("password_match", []).append("PASSWORD_MISMATCH")
+                else:
+                    if not isinstance(confirm_password, str):
+                        errors.setdefault("confirm_password", []).append("MUST_TEXT")
+                if password != confirm_password and (
+                    password or (isinstance(password, str) and not password.isspace())
+                ):
+                    errors.setdefault("password_match", []).append("IS_MISMATCH")
                 else:
                     if len(password) < 8:
                         errors.setdefault("password_security", []).append("TOO_SHORT")
@@ -120,14 +131,17 @@ class RegisterController:
                 token_email = await TokenEmailAccountActive.insert(
                     f"{result.id}", int(timestamp.timestamp())
                 )
+                karakter = string.ascii_uppercase + string.digits
+                otp = "".join(random.choices(karakter, k=6))
                 await AccountActiveDatabase.insert(
                     email,
                     token_web,
                     token_email,
+                    otp,
                     int(timestamp.timestamp()),
                     int(expired_at.timestamp()),
                 )
-                SendEmail.send_email_verification(result, token_email)
+                SendEmail.send_email_verification(result, token_email, otp)
             return (
                 jsonify(
                     {

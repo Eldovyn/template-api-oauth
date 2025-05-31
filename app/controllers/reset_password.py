@@ -11,10 +11,11 @@ class ResetPasswordController:
     async def get_user_reset_password_verification(token, timestamp):
         created_at = int(timestamp.timestamp())
         errors = {}
-        if not isinstance(token, str):
-            errors.setdefault("token", []).append("MUST_TEXT")
         if not token or (isinstance(token, str) and token.isspace()):
             errors.setdefault("token", []).append("IS_REQUIRED")
+        else:
+            if not isinstance(token, str):
+                errors.setdefault("token", []).append("MUST_TEXT")
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
         if not (
@@ -63,34 +64,41 @@ class ResetPasswordController:
 
         created_at = int(timestamp.timestamp())
         errors = {}
-        if not isinstance(token, str):
-            errors.setdefault("token", []).append("MUST_TEXT")
         if not token or (isinstance(token, str) and token.isspace()):
             errors.setdefault("token", []).append("IS_REQUIRED")
-        if not isinstance(new_password, str):
-            errors.setdefault("new_password", []).append("MUST_TEXT")
+        else:
+            if not isinstance(token, str):
+                errors.setdefault("token", []).append("MUST_TEXT")
         if not new_password or (
             isinstance(new_password, str) and new_password.isspace()
         ):
             errors.setdefault("password", []).append("IS_REQUIRED")
-        if not isinstance(confirm_password, str):
-            errors.setdefault("confirm_password", []).append("MUST_TEXT")
+        else:
+            if not isinstance(new_password, str):
+                errors.setdefault("new_password", []).append("MUST_TEXT")
         if not confirm_password or (
             isinstance(confirm_password, str) and confirm_password.isspace()
         ):
             errors.setdefault("confirm_password", []).append("IS_REQUIRED")
-        if new_password != confirm_password:
-            errors.setdefault("password_match", []).append("PASSWORD_MISMATCH")
-        if len(new_password) < 8:
-            errors.setdefault("password_security", []).append("TOO_SHORT")
-        if not re.search(r"[A-Z]", new_password):
-            errors.setdefault("password_security", []).append("NO_CAPITAL")
-        if not re.search(r"[a-z]", new_password):
-            errors.setdefault("password_security", []).append("NO_LOWERCASE")
-        if not re.search(r"[0-9]", new_password):
-            errors.setdefault("password_security", []).append("NO_NUMBER")
-        if not re.search(r"[!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>\/?]", new_password):
-            errors.setdefault("password_security", []).append("NO_SYMBOL")
+        else:
+            if not isinstance(confirm_password, str):
+                errors.setdefault("confirm_password", []).append("MUST_TEXT")
+        if new_password != confirm_password and (
+            new_password
+            or (isinstance(new_password, str) and not new_password.isspace())
+        ):
+            errors.setdefault("password_match", []).append("IS_MISMATCH")
+        else:
+            if len(new_password) < 8:
+                errors.setdefault("password_security", []).append("TOO_SHORT")
+            if not re.search(r"[A-Z]", new_password):
+                errors.setdefault("password_security", []).append("NO_CAPITAL")
+            if not re.search(r"[a-z]", new_password):
+                errors.setdefault("password_security", []).append("NO_LOWERCASE")
+            if not re.search(r"[0-9]", new_password):
+                errors.setdefault("password_security", []).append("NO_NUMBER")
+            if not re.search(r"[!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>\/?]", new_password):
+                errors.setdefault("password_security", []).append("NO_SYMBOL")
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
         result_password = bcrypt.generate_password_hash(new_password).decode("utf-8")
@@ -147,10 +155,11 @@ class ResetPasswordController:
     async def user_reset_password_information(token, timestamp):
         created_at = int(timestamp.timestamp())
         errors = {}
-        if not isinstance(token, str):
-            errors.setdefault("token", []).append("MUST_TEXT")
         if not token or (isinstance(token, str) and token.isspace()):
             errors.setdefault("token", []).append("IS_REQUIRED")
+        else:
+            if not isinstance(token, str):
+                errors.setdefault("token", []).append("MUST_TEXT")
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
         if not (
@@ -195,15 +204,16 @@ class ResetPasswordController:
     @staticmethod
     async def send_reset_password_email(email, timestamp):
         errors = {}
-        if not isinstance(email, str):
-            errors.setdefault("email", []).append("MUST_TEXT")
         if not email or (isinstance(email, str) and email.isspace()):
             errors.setdefault("email", []).append("IS_REQUIRED")
-        try:
-            valid = validate_email(email)
-            email = valid.email
-        except:
-            errors.setdefault("email", []).append("IS_INVALID")
+        else:
+            if not isinstance(email, str):
+                errors.setdefault("email", []).append("MUST_TEXT")
+            try:
+                valid = validate_email(email)
+                email = valid.email
+            except:
+                errors.setdefault("email", []).append("IS_INVALID")
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
         if not (user_data := await UserDatabase.get("by_email", email=email)):
