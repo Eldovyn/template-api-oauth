@@ -358,4 +358,6 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+app/keys
+
 # End of https://www.toptal.com/developers/gitignore/api/python,pythonvanilla,venv,dotenv,virtualenv,database,redis,visualstudiocode,windows,test
