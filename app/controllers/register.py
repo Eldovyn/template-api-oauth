@@ -64,11 +64,19 @@ class RegisterController:
                 else:
                     if not isinstance(username, str):
                         errors.setdefault("username", []).append("MUST_TEXT")
+                    if isinstance(username, str) and len(username) < 5:
+                        errors.setdefault("username", []).append("TOO_SHORT")
+                    if isinstance(username, str) and len(username) > 15:
+                        errors.setdefault("username", []).append("TOO_LONG")
                 if not email or (isinstance(email, str) and email.isspace()):
                     errors.setdefault("email", []).append("IS_REQUIRED")
                 else:
                     if not isinstance(email, str):
                         errors.setdefault("email", []).append("MUST_TEXT")
+                    if isinstance(email, str) and len(email) < 6:
+                        errors.setdefault("email", []).append("TOO_SHORT")
+                    if isinstance(email, str) and len(email) > 50:
+                        errors.setdefault("email", []).append("TOO_LONG")
                     try:
                         valid = validate_email(email)
                         email = valid.email
@@ -105,6 +113,8 @@ class RegisterController:
                         r"[!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>\/?]", password
                     ):
                         errors.setdefault("password_security", []).append("NO_SYMBOL")
+                    if not re.search(r"[A-Za-z]", password):
+                        errors.setdefault("password_security", []).append("NO_LETTER")
                 if errors:
                     return jsonify({"errors": errors, "message": "invalid data"}), 400
                 result_password = bcrypt.generate_password_hash(password).decode(

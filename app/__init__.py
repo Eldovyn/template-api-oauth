@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 import os
 from .database import db
 from .celery_app import celery_init_app
@@ -20,6 +20,7 @@ from .config import (
     smtp_host,
     smtp_port,
 )
+from werkzeug.exceptions import BadRequest
 
 
 def create_app(test_config=None):
@@ -125,7 +126,18 @@ def create_app(test_config=None):
         return response
 
     @app.before_request
-    def before_request():
+    async def before_request():
         request.timestamp = datetime.datetime.now(datetime.timezone.utc)
+
+    @app.errorhandler(BadRequest)
+    async def handle_bad_request(e):
+        return (
+            jsonify(
+                {
+                    "message": str(e.description),
+                }
+            ),
+            400,
+        )
 
     return app
