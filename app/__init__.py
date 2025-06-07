@@ -1,15 +1,5 @@
 from flask import Flask, request
 import os
-from .config import (
-    database_mongodb,
-    database_mongodb_url,
-    smtp_host,
-    smtp_port,
-    smtp_email,
-    smtp_password,
-    celery_broker_url,
-    celery_result_backend,
-)
 from .database import db
 from .celery_app import celery_init_app
 from .mail import mail
@@ -20,14 +10,44 @@ from .models import (
     OtpEmailModel,
 )
 from celery.schedules import crontab
+from .config import (
+    database_mongodb,
+    database_mongodb_url,
+    celery_broker_url,
+    celery_result_backend,
+    smtp_email,
+    smtp_password,
+    smtp_host,
+    smtp_port,
+)
 
 
-def create_app():
+def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
 
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
     private_key_path = os.path.join(BASE_DIR, "keys", "private.pem")
     public_key_path = os.path.join(BASE_DIR, "keys", "public.pem")
+
+    app.config.from_mapping(
+        CELERY={
+            "broker_url": celery_broker_url,
+            "result_backend": celery_result_backend,
+            "task_ignore_result": True,
+        },
+        MONGODB_SETTINGS={
+            "db": database_mongodb,
+            "host": database_mongodb_url,
+            "connect": False,
+        },
+        MAIL_SERVER=smtp_host,
+        MAIL_PORT=smtp_port,
+        MAIL_USE_TLS=True,
+        MAIL_USE_SSL=False,
+        MAIL_USERNAME=smtp_email,
+        MAIL_PASSWORD=smtp_password,
+        MAIL_DEFAULT_SENDER=smtp_email,
+    )
 
     global PRIVATE_KEY, PUBLIC_KEY
     with open(private_key_path, "rb") as f:
@@ -36,26 +56,15 @@ def create_app():
     with open(public_key_path, "rb") as f:
         PUBLIC_KEY = f.read()
 
-    app.config.from_prefixed_env()
-    app.config.from_mapping(
-        CELERY=dict(
-            broker_url=celery_broker_url,
-            result_backend=celery_result_backend,
-            task_ignore_result=True,
-        ),
-    )
-    app.config["MONGODB_SETTINGS"] = {
-        "db": database_mongodb,
-        "host": database_mongodb_url,
-        "connect": False,
-    }
-    app.config["MAIL_SERVER"] = smtp_host
-    app.config["MAIL_PORT"] = smtp_port
-    app.config["MAIL_USE_TLS"] = True
-    app.config["MAIL_USE_SSL"] = False
-    app.config["MAIL_USERNAME"] = smtp_email
-    app.config["MAIL_PASSWORD"] = smtp_password
-    app.config["MAIL_DEFAULT_SENDER"] = smtp_email
+    if test_config is None:
+        app.config.from_pyfile("config.py", silent=True)
+    else:
+        app.config.from_mapping(test_config)
+
+    try:
+        os.makedirs(app.instance_path)
+    except OSError:
+        pass
 
     global celery_app
     celery_app = celery_init_app(app)

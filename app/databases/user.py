@@ -1,5 +1,5 @@
 from .database import Database
-from ..models import UserModel, OtpEmailModel, WalletUserModel
+from ..models import UserModel, OtpEmailModel
 
 
 class UserDatabase(Database):
