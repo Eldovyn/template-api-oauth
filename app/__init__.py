@@ -14,7 +14,11 @@ from .database import db
 from .celery_app import celery_init_app
 from .mail import mail
 import datetime
-from .models import AccountActiveModel, ResetPasswordModel, OtpEmailModel
+from .models import (
+    AccountActiveModel,
+    ResetPasswordModel,
+    OtpEmailModel,
+)
 from celery.schedules import crontab
 
 
@@ -58,26 +62,29 @@ def create_app():
     db.init_app(app)
     mail.init_app(app)
 
-    @celery_app.task(name="delete_token_task")
-    def delete_token_task():
+    @celery_app.task(name="update_data_every_5_minutes")
+    def update_data_every_5_minutes():
         expired_at = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
         if data_account_active := AccountActiveModel.objects.all():
             for account_active_data in data_account_active:
                 if account_active_data.expired_at <= expired_at:
                     account_active_data.delete()
+                    print(f"success delete token {account_active_data.user.email}")
         if data_reset_password := ResetPasswordModel.objects.all():
             for reset_password_data in data_reset_password:
                 if reset_password_data.expired_at <= expired_at:
                     reset_password_data.delete()
+                    print(f"success delete token {reset_password_data.user.email}")
         if data_otp_email := OtpEmailModel.objects.all():
             for otp_email_data in data_otp_email:
                 if otp_email_data.expired_at <= expired_at:
                     otp_email_data.delete()
-        return f"delete token at {int(datetime.datetime.now(datetime.timezone.utc).timestamp())}"
+                    print(f"success delete token {otp_email_data.user.email}")
+        return "clear data"
 
     celery_app.conf.beat_schedule = {
         "run-every-5-minutes": {
-            "task": "delete_token_task",
+            "task": "update_data_every_5_minutes",
             "schedule": crontab(minute="*/5"),
         },
     }

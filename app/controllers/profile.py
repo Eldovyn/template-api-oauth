@@ -1,12 +1,9 @@
-from ..databases import UserDatabase, OtpEmailDatabase
+from ..databases import UserDatabase
 from flask import jsonify
 import mongoengine as me
 from ..utils import SendEmail
 import re
 from email_validator import validate_email
-import random
-import string
-import datetime
 
 
 class ProfileController:

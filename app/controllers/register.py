@@ -54,10 +54,10 @@ class RegisterController:
                         ),
                         409,
                     )
-                result = await UserDatabase.insert(
+                user_data = await UserDatabase.insert(
                     provider, username, email, None, created_at
                 )
-                access_token = await AuthJwt.generate_jwt(result.id, created_at)
+                access_token = await AuthJwt.generate_jwt(user_data.id, created_at)
             else:
                 if not username or (isinstance(username, str) and username.isspace()):
                     errors.setdefault("username", []).append("IS_REQUIRED")
@@ -121,15 +121,15 @@ class RegisterController:
                         409,
                     )
             if provider != "google":
-                result = await UserDatabase.insert(
+                user_data = await UserDatabase.insert(
                     provider, username, email, result_password, created_at
                 )
                 expired_at = timestamp + datetime.timedelta(minutes=5)
                 token_web = await TokenWebAccountActive.insert(
-                    f"{result.id}", int(timestamp.timestamp())
+                    f"{user_data.id}", int(timestamp.timestamp())
                 )
                 token_email = await TokenEmailAccountActive.insert(
-                    f"{result.id}", int(timestamp.timestamp())
+                    f"{user_data.id}", int(timestamp.timestamp())
                 )
                 karakter = string.ascii_uppercase + string.digits
                 otp = "".join(random.choices(karakter, k=6))
@@ -141,18 +141,18 @@ class RegisterController:
                     int(timestamp.timestamp()),
                     int(expired_at.timestamp()),
                 )
-                SendEmail.send_email_verification(result, token_email, otp)
+                SendEmail.send_email_verification(user_data, token_email, otp)
             return (
                 jsonify(
                     {
                         "message": "user registered successfully",
                         "data": {
-                            "id": result.id,
-                            "username": result.username,
-                            "created_at": result.created_at,
-                            "updated_at": result.updated_at,
-                            "is_active": result.is_active,
-                            "provider": result.provider,
+                            "id": user_data.id,
+                            "username": user_data.username,
+                            "created_at": user_data.created_at,
+                            "updated_at": user_data.updated_at,
+                            "is_active": user_data.is_active,
+                            "provider": user_data.provider,
                         },
                         "token": {
                             "access_token": access_token,
