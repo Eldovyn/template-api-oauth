@@ -142,50 +142,39 @@ class ProfileController:
                 errors.setdefault("username", []).append("TOO_LONG")
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
-        try:
-            if not (
-                user_data := await UserDatabase.update(
-                    "username",
-                    user_id=user.id,
-                    username=username,
-                )
-            ):
-                return (
-                    jsonify(
-                        {
-                            "message": "invalid or expired token",
-                            "errors": {"token": ["IS_INVALID"]},
-                        }
-                    ),
-                    401,
-                )
-            SendEmail.send_email_update_username(user_data, username)
+        if not (
+            user_data := await UserDatabase.update(
+                "username",
+                user_id=user.id,
+                username=username,
+            )
+        ):
             return (
                 jsonify(
                     {
-                        "message": "successfully update username",
-                        "data": {
-                            "id": user_data.id,
-                            "email": user_data.email,
-                            "username": user_data.username,
-                            "created_at": user_data.created_at,
-                            "updated_at": user_data.updated_at,
-                            "is_active": user_data.is_active,
-                        },
+                        "message": "invalid or expired token",
+                        "errors": {"token": ["IS_INVALID"]},
                     }
                 ),
-                201,
+                401,
             )
-        except me.errors.NotUniqueError:
-            return (
-                jsonify(
-                    {
-                        "message": "username already exists",
-                        "errors": {"username": ["ALREADY_EXISTS"]},
-                    }
-                ),
-                409,
-            )
+        SendEmail.send_email_update_username(user_data, username)
+        return (
+            jsonify(
+                {
+                    "message": "successfully update username",
+                    "data": {
+                        "id": user_data.id,
+                        "email": user_data.email,
+                        "username": user_data.username,
+                        "created_at": user_data.created_at,
+                        "updated_at": user_data.updated_at,
+                        "is_active": user_data.is_active,
+                    },
+                }
+            ),
+            201,
+        )
 
     @staticmethod
     async def user_me(user):
