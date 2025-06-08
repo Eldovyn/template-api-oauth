@@ -108,7 +108,7 @@ class RegisterController:
                     password or (isinstance(password, str) and not password.isspace())
                 ):
                     errors.setdefault("password_match", []).append("IS_MISMATCH")
-                else:
+                if isinstance(password, str) and password == confirm_password:
                     if len(password) < 8:
                         errors.setdefault("password_security", []).append("TOO_SHORT")
                     if not re.search(r"[A-Z]", password):
