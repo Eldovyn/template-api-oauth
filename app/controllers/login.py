@@ -5,7 +5,6 @@ from ..databases import (
 )
 from flask import jsonify
 from email_validator import validate_email
-from google.auth.transport import requests
 import requests
 from ..utils import AuthJwt, TokenEmailAccountActive, TokenWebAccountActive, SendEmail
 import datetime
