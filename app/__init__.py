@@ -77,12 +77,18 @@ def create_app(test_config=None):
         expired_at = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
         if data_account_active := AccountActiveModel.objects.all():
             for account_active_data in data_account_active:
-                if account_active_data.expired_at <= expired_at:
+                if (
+                    account_active_data.expired_at <= expired_at
+                    or account_active_data.user.is_active
+                ):
                     account_active_data.delete()
                     print(f"success delete token {account_active_data.user.email}")
         if data_reset_password := ResetPasswordModel.objects.all():
             for reset_password_data in data_reset_password:
-                if reset_password_data.expired_at <= expired_at:
+                if (
+                    reset_password_data.expired_at <= expired_at
+                    or reset_password_data.user.is_active
+                ):
                     reset_password_data.delete()
                     print(f"success delete token {reset_password_data.user.email}")
         if data_otp_email := OtpEmailModel.objects.all():
