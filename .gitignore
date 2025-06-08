@@ -360,4 +360,8 @@ $RECYCLE.BIN/
 
 app/keys
 
+.dockerignore
+docker-compose.yml
+Dockerfile
+
 # End of https://www.toptal.com/developers/gitignore/api/python,pythonvanilla,venv,dotenv,virtualenv,database,redis,visualstudiocode,windows,test
