@@ -136,6 +136,10 @@ class ProfileController:
         else:
             if not isinstance(username, str):
                 errors.setdefault("username", []).append("MUST_TEXT")
+            if isinstance(username, str) and len(username) < 5:
+                errors.setdefault("username", []).append("TOO_SHORT")
+            if isinstance(username, str) and len(username) > 15:
+                errors.setdefault("username", []).append("TOO_LONG")
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
         try:
