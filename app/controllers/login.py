@@ -60,7 +60,18 @@ class LoginController:
                 url = f"https://www.googleapis.com/oauth2/v3/userinfo?access_token={token}"
                 response = requests.get(url)
                 resp = response.json()
-                email = resp["email"]
+                try:
+                    email = resp["email"]
+                except KeyError:
+                    return (
+                        jsonify(
+                            {
+                                "errors": {"token": ["IS_INVALID"]},
+                                "message": "invalid data",
+                            }
+                        ),
+                        400,
+                    )
                 if not (user_data := await UserDatabase.get("by_email", email=email)):
                     return (
                         jsonify(
