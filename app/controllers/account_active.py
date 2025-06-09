@@ -12,7 +12,7 @@ class AccountActiveController:
     async def get_user_account_active_verification(token, timestamp):
         created_at = int(timestamp.timestamp())
         errors = {}
-        if not token or (isinstance(token, str) and token.isspace()):
+        if token is None or (isinstance(token, str) and token.strip() == ""):
             errors.setdefault("token", []).append("IS_REQUIRED")
         else:
             if not isinstance(token, str):
@@ -62,12 +62,12 @@ class AccountActiveController:
     async def user_account_active_verification(token, otp, timestamp):
         created_at = int(timestamp.timestamp())
         errors = {}
-        if not token or (isinstance(token, str) and token.isspace()):
+        if token is None or (isinstance(token, str) and token.strip() == ""):
             errors.setdefault("token", []).append("IS_REQUIRED")
         else:
             if not isinstance(token, str):
                 errors.setdefault("token", []).append("MUST_TEXT")
-        if not otp or (isinstance(otp, str) and otp.isspace()):
+        if otp is None or (isinstance(otp, str) and otp.strip() == ""):
             errors.setdefault("otp", []).append("IS_REQUIRED")
         else:
             if not isinstance(otp, str):
@@ -123,7 +123,7 @@ class AccountActiveController:
     async def user_account_active_information(token, timestamp):
         created_at = int(timestamp.timestamp())
         errors = {}
-        if not token or (isinstance(token, str) and token.isspace()):
+        if token is None or (isinstance(token, str) and token.strip() == ""):
             errors.setdefault("token", []).append("IS_REQUIRED")
         else:
             if not isinstance(token, str):
@@ -172,7 +172,7 @@ class AccountActiveController:
     @staticmethod
     async def send_account_active_email(email, timestamp):
         errors = {}
-        if not email or (isinstance(email, str) and email.isspace()):
+        if email is None or (isinstance(email, str) and email.strip() == ""):
             errors.setdefault("email", []).append("IS_REQUIRED")
         else:
             if not isinstance(email, str):

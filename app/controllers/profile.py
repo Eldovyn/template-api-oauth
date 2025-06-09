@@ -1,6 +1,5 @@
 from ..databases import UserDatabase
 from flask import jsonify
-import mongoengine as me
 from ..utils import SendEmail
 import re
 from email_validator import validate_email
@@ -10,7 +9,7 @@ class ProfileController:
     @staticmethod
     async def update_email(user, email, otp, timestamp):
         errors = {}
-        if not email or (isinstance(email, str) and email.isspace()):
+        if email is None or (isinstance(email, str) and email.strip() == ""):
             errors.setdefault("email", []).append("IS_REQUIRED")
         else:
             if not isinstance(email, str):
@@ -63,13 +62,13 @@ class ProfileController:
         from ..bcrypt import bcrypt
 
         errors = {}
-        if not password or (isinstance(password, str) and password.isspace()):
+        if password is None or (isinstance(password, str) and password.strip() == ""):
             errors.setdefault("password", []).append("IS_REQUIRED")
         else:
             if not isinstance(password, str):
                 errors.setdefault("password", []).append("MUST_TEXT")
-        if not confirm_password or (
-            isinstance(confirm_password, str) and confirm_password.isspace()
+        if confirm_password is None or (
+            isinstance(confirm_password, str) and confirm_password.strip() == ""
         ):
             errors.setdefault("confirm_password", []).append("IS_REQUIRED")
         else:
@@ -133,7 +132,7 @@ class ProfileController:
     @staticmethod
     async def update_username(user, username):
         errors = {}
-        if not username or (isinstance(username, str) and username.isspace()):
+        if username is None or (isinstance(username, str) and username.strip() == ""):
             errors.setdefault("username", []).append("IS_REQUIRED")
         else:
             if not isinstance(username, str):

@@ -11,7 +11,7 @@ class ResetPasswordController:
     async def get_user_reset_password_verification(token, timestamp):
         created_at = int(timestamp.timestamp())
         errors = {}
-        if not token or (isinstance(token, str) and token.isspace()):
+        if token is None or (isinstance(token, str) and token.strip() == ""):
             errors.setdefault("token", []).append("IS_REQUIRED")
         else:
             if not isinstance(token, str):
@@ -64,20 +64,20 @@ class ResetPasswordController:
 
         created_at = int(timestamp.timestamp())
         errors = {}
-        if not token or (isinstance(token, str) and token.isspace()):
+        if token is None or (isinstance(token, str) and token.strip() == ""):
             errors.setdefault("token", []).append("IS_REQUIRED")
         else:
             if not isinstance(token, str):
                 errors.setdefault("token", []).append("MUST_TEXT")
-        if not new_password or (
-            isinstance(new_password, str) and new_password.isspace()
+        if new_password is None or (
+            isinstance(new_password, str) and new_password.strip() == ""
         ):
             errors.setdefault("password", []).append("IS_REQUIRED")
         else:
             if not isinstance(new_password, str):
                 errors.setdefault("new_password", []).append("MUST_TEXT")
-        if not confirm_password or (
-            isinstance(confirm_password, str) and confirm_password.isspace()
+        if confirm_password is None or (
+            isinstance(confirm_password, str) and confirm_password.strip() == ""
         ):
             errors.setdefault("confirm_password", []).append("IS_REQUIRED")
         else:
@@ -159,7 +159,7 @@ class ResetPasswordController:
     async def user_reset_password_information(token, timestamp):
         created_at = int(timestamp.timestamp())
         errors = {}
-        if not token or (isinstance(token, str) and token.isspace()):
+        if token is None or (isinstance(token, str) and token.strip() == ""):
             errors.setdefault("token", []).append("IS_REQUIRED")
         else:
             if not isinstance(token, str):
@@ -208,7 +208,7 @@ class ResetPasswordController:
     @staticmethod
     async def send_reset_password_email(email, timestamp):
         errors = {}
-        if not email or (isinstance(email, str) and email.isspace()):
+        if email is None or (isinstance(email, str) and email.strip() == ""):
             errors.setdefault("email", []).append("IS_REQUIRED")
         else:
             if not isinstance(email, str):
