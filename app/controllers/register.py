@@ -23,7 +23,9 @@ class RegisterController:
         try:
             created_at = int(timestamp.timestamp())
             errors = {}
-            if not provider or (isinstance(provider, str) and provider.isspace()):
+            if provider is None or (
+                isinstance(provider, str) and provider.strip() == ""
+            ):
                 errors.setdefault("provider", []).append("IS_REQUIRED")
             else:
                 if not isinstance(provider, str):
@@ -31,7 +33,7 @@ class RegisterController:
                 if provider not in PROVIDER.split(", "):
                     errors.setdefault("provider", []).append("IS_INVALID")
             if provider == "google":
-                if not token or (isinstance(token, str) and token.isspace()):
+                if token is None or (isinstance(token, str) and token.strip() == ""):
                     errors.setdefault("token", []).append("IS_REQUIRED")
                 else:
                     if not isinstance(token, str):
@@ -69,7 +71,9 @@ class RegisterController:
                 )
                 access_token = await AuthJwt.generate_jwt(user_data.id, created_at)
             else:
-                if not username or (isinstance(username, str) and username.isspace()):
+                if username is None or (
+                    isinstance(username, str) and username.strip() == ""
+                ):
                     errors.setdefault("username", []).append("IS_REQUIRED")
                 else:
                     if not isinstance(username, str):
@@ -78,7 +82,7 @@ class RegisterController:
                         errors.setdefault("username", []).append("TOO_SHORT")
                     if isinstance(username, str) and len(username) > 15:
                         errors.setdefault("username", []).append("TOO_LONG")
-                if not email or (isinstance(email, str) and email.isspace()):
+                if email is None or (isinstance(email, str) and email.strip() == ""):
                     errors.setdefault("email", []).append("IS_REQUIRED")
                 else:
                     if not isinstance(email, str):
@@ -92,7 +96,9 @@ class RegisterController:
                         email = valid.email
                     except:
                         errors.setdefault("email", []).append("IS_INVALID")
-                if not password or (isinstance(password, str) and password.isspace()):
+                if password is None or (
+                    isinstance(password, str) and password.strip() == ""
+                ):
                     errors.setdefault("password", []).append("IS_REQUIRED")
                 else:
                     if not isinstance(password, str):

@@ -39,7 +39,9 @@ class LoginController:
 
         try:
             errors = {}
-            if not provider or (isinstance(provider, str) and provider.isspace()):
+            if provider is None or (
+                isinstance(provider, str) and provider.strip() == ""
+            ):
                 errors.setdefault("provider", []).append("IS_REQUIRED")
             else:
                 if not isinstance(provider, str):
@@ -48,7 +50,7 @@ class LoginController:
                     errors.setdefault("provider", []).append("IS_INVALID")
 
             if provider == "google":
-                if not token or (isinstance(token, str) and token.isspace()):
+                if token is None or (isinstance(token, str) and token.strip() == ""):
                     errors.setdefault("token", []).append("IS_REQUIRED")
                 else:
                     if not isinstance(token, str):
@@ -104,7 +106,7 @@ class LoginController:
                     f"{user_data.id}", int(timestamp.timestamp())
                 )
             else:
-                if not email or (isinstance(email, str) and email.isspace()):
+                if email is None or (isinstance(email, str) and email.strip() == ""):
                     errors.setdefault("email", []).append("IS_REQUIRED")
                 else:
                     if not isinstance(email, str):
@@ -114,7 +116,9 @@ class LoginController:
                         email = valid.email
                     except:
                         errors.setdefault("email", []).append("IS_INVALID")
-                if not password or (isinstance(password, str) and password.isspace()):
+                if password is None or (
+                    isinstance(password, str) and password.strip() == ""
+                ):
                     errors.setdefault("password", []).append("IS_REQUIRED")
                 else:
                     if not isinstance(password, str):
