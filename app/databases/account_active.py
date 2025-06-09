@@ -87,6 +87,13 @@ class AccountActiveDatabase(Database):
                     user_data.save()
                     data_account_active.delete()
                     return data_account_active
+        if category == "by_user_id":
+            if user_data := UserModel.objects(id=user_id).first():
+                if data_account_active := AccountActiveModel.objects(
+                    user=user_data
+                ).first():
+                    data_account_active.delete()
+                    return data_account_active
 
     @staticmethod
     async def update(category, **kwargs):

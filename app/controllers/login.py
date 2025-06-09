@@ -181,6 +181,10 @@ class LoginController:
                         ),
                         403,
                     )
+                else:
+                    await AccountActiveDatabase.delete(
+                        "by_user_id", user_id=user_data.id
+                    )
                 access_token = await AuthJwt.generate_jwt(
                     f"{user_data.id}", int(timestamp.timestamp())
                 )
