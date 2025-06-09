@@ -4,11 +4,7 @@ from .database import db
 from .celery_app import celery_init_app
 from .mail import mail
 import datetime
-from .models import (
-    AccountActiveModel,
-    ResetPasswordModel,
-    OtpEmailModel,
-)
+from .models import AccountActiveModel, ResetPasswordModel, OtpEmailModel
 from celery.schedules import crontab
 from .config import (
     database_mongodb,
@@ -21,6 +17,7 @@ from .config import (
     smtp_port,
 )
 from werkzeug.exceptions import BadRequest
+from .bcrypt import bcrypt
 
 
 def create_app(test_config=None):
@@ -69,6 +66,7 @@ def create_app(test_config=None):
 
     global celery_app
     celery_app = celery_init_app(app)
+    bcrypt.init_app(app)
     db.init_app(app)
     mail.init_app(app)
 
@@ -106,6 +104,7 @@ def create_app(test_config=None):
     }
 
     with app.app_context():
+        from .utils import jwt_required_request
         from .api.register import register_router
         from .api.login import login_router
         from .api.account_active import account_active_router
@@ -121,6 +120,8 @@ def create_app(test_config=None):
         app.register_blueprint(me_router)
         app.register_blueprint(profile_router)
         app.register_blueprint(otp_email_router)
+
+        app.before_request_funcs = {"me_router": [jwt_required_request]}
 
     @app.after_request
     async def add_cors_headers(response):

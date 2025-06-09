@@ -6,7 +6,6 @@ otp_email_router = Blueprint("otp_email_router", __name__)
 
 
 @otp_email_router.post("/short.me/otp/email")
-@jwt_required()
 async def user_login():
     user = request.user
     timestamp = request.timestamp

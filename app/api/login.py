@@ -17,7 +17,6 @@ async def user_login():
 
 
 @login_router.post("/short.me/logout")
-@jwt_required()
 async def user_logout():
     user = request.user
     token = request.token
