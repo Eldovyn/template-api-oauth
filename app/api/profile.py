@@ -1,6 +1,5 @@
 from flask import Blueprint, request
 from ..controllers import ProfileController
-from ..utils import jwt_required
 
 profile_router = Blueprint("profile_router", __name__)
 

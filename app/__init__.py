@@ -121,7 +121,11 @@ def create_app(test_config=None):
         app.register_blueprint(profile_router)
         app.register_blueprint(otp_email_router)
 
-        app.before_request_funcs = {"me_router": [jwt_required_request]}
+        app.before_request_funcs = {
+            "me_router": [jwt_required_request],
+            "profile_router": [jwt_required_request],
+            "otp_email_router": [jwt_required_request],
+        }
 
     @app.after_request
     async def add_cors_headers(response):

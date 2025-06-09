@@ -1,6 +1,5 @@
 from flask import Blueprint, request
 from ..controllers import OtpEmailController
-from ..utils import jwt_required
 
 otp_email_router = Blueprint("otp_email_router", __name__)
 
