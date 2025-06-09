@@ -11,7 +11,6 @@ import datetime
 from ..config import provider as PROVIDER
 import string
 import random
-import traceback
 
 
 class LoginController:
@@ -203,5 +202,4 @@ class LoginController:
                 201,
             )
         except Exception:
-            traceback.print_exc()
             return jsonify({"message": "invalid request"}), 400
