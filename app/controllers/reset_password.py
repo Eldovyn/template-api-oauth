@@ -88,7 +88,9 @@ class ResetPasswordController:
             or (isinstance(new_password, str) and not new_password.isspace())
         ):
             errors.setdefault("password_match", []).append("IS_MISMATCH")
-        else:
+        if isinstance(new_password, str) and new_password == confirm_password:
+            if len(new_password) > 64:
+                errors.setdefault("password_security", []).append("TOO_LONG")
             if len(new_password) < 8:
                 errors.setdefault("password_security", []).append("TOO_SHORT")
             if not re.search(r"[A-Z]", new_password):
@@ -99,6 +101,8 @@ class ResetPasswordController:
                 errors.setdefault("password_security", []).append("NO_NUMBER")
             if not re.search(r"[!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>\/?]", new_password):
                 errors.setdefault("password_security", []).append("NO_SYMBOL")
+            if not re.search(r"[A-Za-z]", new_password):
+                errors.setdefault("password_security", []).append("NO_LETTER")
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
         result_password = bcrypt.generate_password_hash(new_password).decode("utf-8")
