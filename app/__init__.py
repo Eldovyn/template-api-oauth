@@ -80,7 +80,9 @@ def create_app(test_config=None):
                     or account_active_data.user.is_active
                 ):
                     account_active_data.delete()
-                    print(f"success delete token {account_active_data.user.email}")
+                    print(
+                        f"success delete token account active {account_active_data.user.email}"
+                    )
         if data_reset_password := ResetPasswordModel.objects.all():
             for reset_password_data in data_reset_password:
                 if (
@@ -88,12 +90,14 @@ def create_app(test_config=None):
                     or reset_password_data.user.is_active
                 ):
                     reset_password_data.delete()
-                    print(f"success delete token {reset_password_data.user.email}")
+                    print(
+                        f"success delete token reset password {reset_password_data.user.email}"
+                    )
         if data_otp_email := OtpEmailModel.objects.all():
             for otp_email_data in data_otp_email:
                 if otp_email_data.expired_at <= expired_at:
                     otp_email_data.delete()
-                    print(f"success delete token {otp_email_data.user.email}")
+                    print(f"success delete token otp email {otp_email_data.user.email}")
         return "clear data"
 
     celery_app.conf.beat_schedule = {
