@@ -19,6 +19,31 @@ class AccountActiveController:
                 errors.setdefault("token", []).append("MUST_TEXT")
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
+        token_email = await TokenEmailAccountActive.get(token)
+        if not token_email:
+            return (
+                jsonify(
+                    {
+                        "errors": {"token": ["IS_INVALID"]},
+                        "message": "token invalid",
+                    }
+                ),
+                404,
+            )
+        if not (
+            user_token := await AccountActiveDatabase.get(
+                "by_token_email", token=token, created_at=created_at
+            )
+        ):
+            return (
+                jsonify(
+                    {
+                        "errors": {"token": ["IS_INVALID"]},
+                        "message": "token invalid",
+                    }
+                ),
+                404,
+            )
         if not (
             user_data := await AccountActiveDatabase.get(
                 "by_token_email", token=token, created_at=created_at
@@ -74,7 +99,31 @@ class AccountActiveController:
                 errors.setdefault("otp", []).append("MUST_TEXT")
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
-        token_web = await TokenEmailAccountActive.get(token)
+        token_email = await TokenEmailAccountActive.get(token)
+        if not token_email:
+            return (
+                jsonify(
+                    {
+                        "errors": {"token": ["IS_INVALID"]},
+                        "message": "token invalid",
+                    }
+                ),
+                404,
+            )
+        if not (
+            user_token := await AccountActiveDatabase.get(
+                "by_token_email", token=token, created_at=created_at
+            )
+        ):
+            return (
+                jsonify(
+                    {
+                        "errors": {"token": ["IS_INVALID"]},
+                        "message": "token invalid",
+                    }
+                ),
+                404,
+            )
         if not (
             user_data := await AccountActiveDatabase.get(
                 "by_token_email_otp", token=token, otp=otp, created_at=created_at
@@ -92,7 +141,7 @@ class AccountActiveController:
         await AccountActiveDatabase.delete(
             "user_active_by_token_email",
             token=user_data.token_email,
-            user_id=token_web["user_id"],
+            user_id=token_email["user_id"],
         )
         return (
             jsonify(
@@ -130,6 +179,31 @@ class AccountActiveController:
                 errors.setdefault("token", []).append("MUST_TEXT")
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
+        token_web = await TokenWebAccountActive.get(token)
+        if not token_web:
+            return (
+                jsonify(
+                    {
+                        "errors": {"token": ["IS_INVALID"]},
+                        "message": "token invalid",
+                    }
+                ),
+                404,
+            )
+        if not (
+            user_token := await AccountActiveDatabase.get(
+                "by_token_web", token=token, created_at=created_at
+            )
+        ):
+            return (
+                jsonify(
+                    {
+                        "errors": {"token": ["IS_INVALID"]},
+                        "message": "token invalid",
+                    }
+                ),
+                404,
+            )
         if not (
             user_data := await AccountActiveDatabase.get(
                 "by_token_web", token=token, created_at=created_at
