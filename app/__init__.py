@@ -15,9 +15,12 @@ from .config import (
     smtp_password,
     smtp_host,
     smtp_port,
+    celery_url,
 )
 from werkzeug.exceptions import BadRequest
 from .bcrypt import bcrypt
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 
 def create_app(test_config=None):
@@ -64,11 +67,18 @@ def create_app(test_config=None):
     except OSError:
         pass
 
-    global celery_app
+    global celery_app, limiter
     celery_app = celery_init_app(app)
     bcrypt.init_app(app)
     db.init_app(app)
     mail.init_app(app)
+
+    limiter = Limiter(
+        get_remote_address,
+        app=app,
+        default_limits=["200 per day", "50 per hour"],
+        storage_uri=celery_url,
+    )
 
     @celery_app.task(name="update_data_every_5_minutes")
     def update_data_every_5_minutes():
