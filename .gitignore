@@ -364,4 +364,8 @@ app/keys
 docker-compose.yml
 Dockerfile
 
+*.dat 
+*.dir 
+*.bak
+
 # End of https://www.toptal.com/developers/gitignore/api/python,pythonvanilla,venv,dotenv,virtualenv,database,redis,visualstudiocode,windows,test
