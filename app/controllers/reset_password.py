@@ -18,6 +18,31 @@ class ResetPasswordController:
                 errors.setdefault("token", []).append("MUST_TEXT")
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
+        token_email = await TokenEmailResetPassword.get(token)
+        if not token_email:
+            return (
+                jsonify(
+                    {
+                        "errors": {"token": ["IS_INVALID"]},
+                        "message": "token invalid",
+                    }
+                ),
+                404,
+            )
+        if not (
+            user_token := await ResetPasswordDatabase.get(
+                "by_token_email", token=token, created_at=created_at
+            )
+        ):
+            return (
+                jsonify(
+                    {
+                        "errors": {"token": ["IS_INVALID"]},
+                        "message": "token invalid",
+                    }
+                ),
+                404,
+            )
         if not (
             user_data := await ResetPasswordDatabase.get(
                 "by_token_email", token=token, created_at=created_at
@@ -72,7 +97,7 @@ class ResetPasswordController:
         if new_password is None or (
             isinstance(new_password, str) and new_password.strip() == ""
         ):
-            errors.setdefault("password", []).append("IS_REQUIRED")
+            errors.setdefault("new_password", []).append("IS_REQUIRED")
         else:
             if not isinstance(new_password, str):
                 errors.setdefault("new_password", []).append("MUST_TEXT")
@@ -108,6 +133,31 @@ class ResetPasswordController:
         result_password = bcrypt.generate_password_hash(new_password).decode("utf-8")
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
+        token_email = await TokenEmailResetPassword.get(token)
+        if not token_email:
+            return (
+                jsonify(
+                    {
+                        "errors": {"token": ["IS_INVALID"]},
+                        "message": "token invalid",
+                    }
+                ),
+                404,
+            )
+        if not (
+            user_token := await ResetPasswordDatabase.get(
+                "by_token_email", token=token, created_at=created_at
+            )
+        ):
+            return (
+                jsonify(
+                    {
+                        "errors": {"token": ["IS_INVALID"]},
+                        "message": "token invalid",
+                    }
+                ),
+                404,
+            )
         if not (
             user_data := await ResetPasswordDatabase.get(
                 "by_token_email", token=token, created_at=created_at
@@ -133,7 +183,7 @@ class ResetPasswordController:
         return (
             jsonify(
                 {
-                    "message": "successfully verify user account",
+                    "message": "successfully reset password",
                     "data": {
                         "id": user_data.id,
                         "token_web": user_data.token_web,
@@ -166,6 +216,31 @@ class ResetPasswordController:
                 errors.setdefault("token", []).append("MUST_TEXT")
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
+        token_web = await TokenWebResetPassword.get(token)
+        if not token_web:
+            return (
+                jsonify(
+                    {
+                        "errors": {"token": ["IS_INVALID"]},
+                        "message": "token invalid",
+                    }
+                ),
+                404,
+            )
+        if not (
+            user_token := await ResetPasswordDatabase.get(
+                "by_token_web", token=token, created_at=created_at
+            )
+        ):
+            return (
+                jsonify(
+                    {
+                        "errors": {"token": ["IS_INVALID"]},
+                        "message": "token invalid",
+                    }
+                ),
+                404,
+            )
         if not (
             user_data := await ResetPasswordDatabase.get(
                 "by_token_web", token=token, created_at=created_at
