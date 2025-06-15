@@ -32,8 +32,8 @@ async def get_user_reset_password_verification(token):
 async def user_reset_password_verification(token):
     timestamp = request.timestamp
     json = request.json
-    password = json.get("confirm_password", "")
+    confirm_password = json.get("confirm_password", "")
     new_password = json.get("new_password", "")
     return await ResetPasswordController.user_reset_password_verification(
-        token, password, new_password, timestamp
+        token, new_password, confirm_password, timestamp
     )
