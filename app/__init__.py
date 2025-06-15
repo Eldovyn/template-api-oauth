@@ -50,12 +50,11 @@ def create_app(test_config=None):
         MAIL_DEFAULT_SENDER=smtp_email,
     )
 
-    global PRIVATE_KEY, PUBLIC_KEY
     with open(private_key_path, "rb") as f:
-        PRIVATE_KEY = f.read()
+        app.config["PRIVATE_KEY"] = f.read()
 
     with open(public_key_path, "rb") as f:
-        PUBLIC_KEY = f.read()
+        app.config["PUBLIC_KEY"] = f.read()
 
     if test_config is None:
         app.config.from_pyfile("config.py", silent=True)
@@ -118,7 +117,6 @@ def create_app(test_config=None):
     }
 
     with app.app_context():
-        from .utils import jwt_required_request
         from .api.register import register_router
         from .api.login import login_router
         from .api.account_active import account_active_router
@@ -134,12 +132,6 @@ def create_app(test_config=None):
         app.register_blueprint(me_router)
         app.register_blueprint(profile_router)
         app.register_blueprint(otp_email_router)
-
-        app.before_request_funcs = {
-            "me_router": [jwt_required_request],
-            "profile_router": [jwt_required_request],
-            "otp_email_router": [jwt_required_request],
-        }
 
     @app.after_request
     async def add_cors_headers(response):
