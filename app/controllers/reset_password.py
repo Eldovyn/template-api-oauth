@@ -75,6 +75,8 @@ class ResetPasswordController:
                         "updated_at": user_data.user.updated_at,
                         "is_active": user_data.user.is_active,
                         "provider": user_data.user.provider,
+                        "avatar": user_data.user.avatar,
+                        "email": user_data.user.email,
                     },
                 }
             ),
@@ -199,6 +201,7 @@ class ResetPasswordController:
                         "is_active": user_data.user.is_active,
                         "provider": user_data.user.provider,
                         "email": user_data.user.email,
+                        "avatar": user_data.user.avatar,
                     },
                 }
             ),
@@ -274,6 +277,7 @@ class ResetPasswordController:
                         "updated_at": user_data.user.updated_at,
                         "is_active": user_data.user.is_active,
                         "provider": user_data.user.provider,
+                        "avatar": user_data.user.avatar,
                     },
                 }
             ),
@@ -345,6 +349,8 @@ class ResetPasswordController:
                         "updated_at": reset_password_data.user.updated_at,
                         "is_active": reset_password_data.user.is_active,
                         "provider": reset_password_data.user.provider,
+                        "avatar": reset_password_data.user.avatar,
+                        "email": reset_password_data.user.email,
                     },
                 }
             ),

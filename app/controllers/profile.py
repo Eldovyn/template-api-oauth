@@ -1,11 +1,17 @@
 from ..databases import UserDatabase
-from flask import jsonify
+from flask import jsonify, send_from_directory
 from ..utils import SendEmail
 import re
 from email_validator import validate_email
 
 
 class ProfileController:
+    @staticmethod
+    async def default_avatar():
+        return send_from_directory(
+            "static/images", "default-avatar.webp", mimetype="image/png"
+        )
+
     @staticmethod
     async def update_email(user, email, otp, timestamp):
         errors = {}
@@ -51,6 +57,8 @@ class ProfileController:
                         "created_at": user_data.user.created_at,
                         "updated_at": user_data.user.updated_at,
                         "is_active": user_data.user.is_active,
+                        "avatar": user_data.user.avatar,
+                        "provider": user_data.user.provider,
                     },
                 }
             ),
@@ -123,6 +131,8 @@ class ProfileController:
                         "created_at": user_data.created_at,
                         "updated_at": user_data.updated_at,
                         "is_active": user_data.is_active,
+                        "avatar": user_data.avatar,
+                        "provider": user_data.provider,
                     },
                 }
             ),
@@ -171,6 +181,8 @@ class ProfileController:
                         "created_at": user_data.created_at,
                         "updated_at": user_data.updated_at,
                         "is_active": user_data.is_active,
+                        "avatar": user_data.avatar,
+                        "provider": user_data.provider,
                     },
                 }
             ),
@@ -190,6 +202,8 @@ class ProfileController:
                         "created_at": user.created_at,
                         "updated_at": user.updated_at,
                         "is_active": user.is_active,
+                        "avatar": user.avatar,
+                        "provider": user.provider,
                     },
                 }
             ),
