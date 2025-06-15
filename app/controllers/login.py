@@ -176,6 +176,7 @@ class LoginController:
                                     "is_active": user_data.is_active,
                                     "provider": user_data.provider,
                                     "email": user_data.email,
+                                    "avatar": user_data.avatar,
                                 },
                                 "token": {
                                     "access_token": None,

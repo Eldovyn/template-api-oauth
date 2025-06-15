@@ -1,10 +1,17 @@
 from flask import Blueprint, request
 from ..controllers import ProfileController
+from ..utils import jwt_required
 
 profile_router = Blueprint("profile_router", __name__)
 
 
+@profile_router.get("/short.me/default-avatar")
+async def default_avatar():
+    return await ProfileController.default_avatar()
+
+
 @profile_router.patch("/short.me/user/username")
+@jwt_required()
 async def update_username():
     user = request.user
     json = request.json
@@ -13,6 +20,7 @@ async def update_username():
 
 
 @profile_router.patch("/short.me/user/password")
+@jwt_required()
 async def update_password():
     user = request.user
     json = request.json
@@ -25,6 +33,7 @@ async def update_password():
 
 
 @profile_router.patch("/short.me/user/email")
+@jwt_required()
 async def update_email():
     user = request.user
     json = request.json

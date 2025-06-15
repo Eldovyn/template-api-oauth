@@ -15,9 +15,12 @@ from .config import (
     smtp_password,
     smtp_host,
     smtp_port,
+    celery_url,
 )
 from werkzeug.exceptions import BadRequest
 from .bcrypt import bcrypt
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 
 def create_app(test_config=None):
@@ -47,12 +50,11 @@ def create_app(test_config=None):
         MAIL_DEFAULT_SENDER=smtp_email,
     )
 
-    global PRIVATE_KEY, PUBLIC_KEY
     with open(private_key_path, "rb") as f:
-        PRIVATE_KEY = f.read()
+        app.config["PRIVATE_KEY"] = f.read()
 
     with open(public_key_path, "rb") as f:
-        PUBLIC_KEY = f.read()
+        app.config["PUBLIC_KEY"] = f.read()
 
     if test_config is None:
         app.config.from_pyfile("config.py", silent=True)
@@ -64,11 +66,18 @@ def create_app(test_config=None):
     except OSError:
         pass
 
-    global celery_app
+    global celery_app, limiter
     celery_app = celery_init_app(app)
     bcrypt.init_app(app)
     db.init_app(app)
     mail.init_app(app)
+
+    limiter = Limiter(
+        get_remote_address,
+        app=app,
+        default_limits=["200 per day", "50 per hour"],
+        storage_uri=celery_url,
+    )
 
     @celery_app.task(name="update_data_every_5_minutes")
     def update_data_every_5_minutes():
@@ -80,7 +89,9 @@ def create_app(test_config=None):
                     or account_active_data.user.is_active
                 ):
                     account_active_data.delete()
-                    print(f"success delete token {account_active_data.user.email}")
+                    print(
+                        f"success delete token account active {account_active_data.user.email}"
+                    )
         if data_reset_password := ResetPasswordModel.objects.all():
             for reset_password_data in data_reset_password:
                 if (
@@ -88,12 +99,14 @@ def create_app(test_config=None):
                     or reset_password_data.user.is_active
                 ):
                     reset_password_data.delete()
-                    print(f"success delete token {reset_password_data.user.email}")
+                    print(
+                        f"success delete token reset password {reset_password_data.user.email}"
+                    )
         if data_otp_email := OtpEmailModel.objects.all():
             for otp_email_data in data_otp_email:
                 if otp_email_data.expired_at <= expired_at:
                     otp_email_data.delete()
-                    print(f"success delete token {otp_email_data.user.email}")
+                    print(f"success delete token otp email {otp_email_data.user.email}")
         return "clear data"
 
     celery_app.conf.beat_schedule = {
@@ -104,7 +117,6 @@ def create_app(test_config=None):
     }
 
     with app.app_context():
-        from .utils import jwt_required_request
         from .api.register import register_router
         from .api.login import login_router
         from .api.account_active import account_active_router
@@ -120,12 +132,6 @@ def create_app(test_config=None):
         app.register_blueprint(me_router)
         app.register_blueprint(profile_router)
         app.register_blueprint(otp_email_router)
-
-        app.before_request_funcs = {
-            "me_router": [jwt_required_request],
-            "profile_router": [jwt_required_request],
-            "otp_email_router": [jwt_required_request],
-        }
 
     @app.after_request
     async def add_cors_headers(response):

@@ -77,6 +77,7 @@ class AccountActiveController:
                         "updated_at": user_data.user.updated_at,
                         "is_active": user_data.user.is_active,
                         "provider": user_data.user.provider,
+                        "avatar": user_data.user.avatar,
                     },
                 }
             ),
@@ -162,6 +163,7 @@ class AccountActiveController:
                         "is_active": user_data.user.is_active,
                         "provider": user_data.user.provider,
                         "email": user_data.user.email,
+                        "avatar": user_data.user.avatar,
                     },
                 }
             ),
@@ -237,6 +239,7 @@ class AccountActiveController:
                         "updated_at": user_data.user.updated_at,
                         "is_active": user_data.user.is_active,
                         "provider": user_data.user.provider,
+                        "avatar": user_data.user.avatar,
                     },
                 }
             ),
@@ -321,6 +324,8 @@ class AccountActiveController:
                         "updated_at": account_active_data.account_active.user.updated_at,
                         "is_active": account_active_data.account_active.user.is_active,
                         "provider": account_active_data.account_active.user.provider,
+                        "avatar": account_active_data.account_active.user.avatar,
+                        "email": account_active_data.account_active.user.email,
                     },
                 }
             ),
