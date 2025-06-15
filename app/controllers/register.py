@@ -1,5 +1,5 @@
 from ..databases import UserDatabase, AccountActiveDatabase
-from flask import jsonify
+from flask import jsonify, url_for
 from email_validator import validate_email
 import requests
 import re
@@ -46,6 +46,7 @@ class RegisterController:
                 try:
                     username = resp["name"]
                     email = resp["email"]
+                    avatar = resp["picture"]
                 except KeyError:
                     return (
                         jsonify(
@@ -67,9 +68,9 @@ class RegisterController:
                         409,
                     )
                 user_data = await UserDatabase.insert(
-                    provider, username, email, None, created_at
+                    provider, avatar, username, email, None, created_at
                 )
-                access_token = await AuthJwt.generate_jwt(user_data.id, created_at)
+                access_token = await AuthJwt.generate_jwt(f"{user_data.id}", created_at)
             else:
                 if username is None or (
                     isinstance(username, str) and username.strip() == ""
@@ -138,6 +139,9 @@ class RegisterController:
                 result_password = bcrypt.generate_password_hash(password).decode(
                     "utf-8"
                 )
+                avatar = url_for(
+                    "static", filename="images/default-avatar.webp", _external=True
+                )
                 if user_data := await UserDatabase.get("by_email", email=email):
                     return (
                         jsonify(
@@ -150,7 +154,7 @@ class RegisterController:
                     )
             if provider != "google":
                 user_data = await UserDatabase.insert(
-                    provider, username, email, result_password, created_at
+                    provider, f"{avatar}", username, email, result_password, created_at
                 )
                 expired_at = timestamp + datetime.timedelta(minutes=5)
                 token_web = await TokenWebAccountActive.insert(
@@ -181,6 +185,8 @@ class RegisterController:
                             "updated_at": user_data.updated_at,
                             "is_active": user_data.is_active,
                             "provider": user_data.provider,
+                            "avatar": user_data.avatar,
+                            "email": user_data.email,
                         },
                         "token": {
                             "access_token": access_token,
@@ -190,5 +196,5 @@ class RegisterController:
                 ),
                 201,
             )
-        except Exception:
-            return jsonify({"message": "invalid request"}), 400
+        except Exception as e:
+            return jsonify({"message": f"{e}"}), 400
