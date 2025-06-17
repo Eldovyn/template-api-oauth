@@ -1,5 +1,6 @@
 from flask import Blueprint, request
 from ..controllers import LoginController
+from ..utils import jwt_required
 
 login_router = Blueprint("login_router", __name__)
 
@@ -16,6 +17,7 @@ async def user_login():
 
 
 @login_router.post("/short.me/logout")
+@jwt_required()
 async def user_logout():
     user = request.user
     token = request.token
