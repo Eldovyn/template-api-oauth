@@ -11,11 +11,16 @@ import datetime
 from ..config import provider as PROVIDER
 import string
 import random
+from ..serializers import UserSerializer, TokenSerializer
+from ..models import AccessTokenModel
 
 
 class LoginController:
-    @staticmethod
-    async def user_logout(user, token):
+    def __init__(self):
+        self.user_serializer = UserSerializer()
+        self.token_serializer = TokenSerializer()
+
+    async def user_logout(self, user, token):
         if not (
             user_token := await BlacklistTokenDatabase.insert(user.id, token["iat"])
         ):
@@ -30,8 +35,7 @@ class LoginController:
             )
         return jsonify({"message": "successfully logout"}), 201
 
-    @staticmethod
-    async def user_login(provider, token, email, password, timestamp):
+    async def user_login(self, provider, token, email, password, timestamp):
         from ..bcrypt import bcrypt
 
         token_web = None
@@ -155,7 +159,7 @@ class LoginController:
                     )
                     karakter = string.ascii_uppercase + string.digits
                     otp = "".join(random.choices(karakter, k=6))
-                    await AccountActiveDatabase.insert(
+                    token_account_active = await AccountActiveDatabase.insert(
                         email,
                         token_web,
                         token_email,
@@ -164,23 +168,16 @@ class LoginController:
                         int(expired_at.timestamp()),
                     )
                     SendEmail.send_email_verification(user_data, token_email, otp)
+                    user_serializer = self.user_serializer.serialize(user_data)
+                    token_serializer = self.token_serializer.serialize(
+                        token_account_active, token_email_is_null=True
+                    )
                     return (
                         jsonify(
                             {
                                 "message": "user not active",
-                                "data": {
-                                    "id": user_data.id,
-                                    "username": user_data.username,
-                                    "created_at": user_data.created_at,
-                                    "updated_at": user_data.updated_at,
-                                    "is_active": user_data.is_active,
-                                    "provider": user_data.provider,
-                                    "email": user_data.email,
-                                },
-                                "token": {
-                                    "access_token": None,
-                                    "token_web": token_web,
-                                },
+                                "data": user_serializer,
+                                "token": token_serializer,
                             }
                         ),
                         403,
@@ -192,19 +189,17 @@ class LoginController:
                 access_token = await AuthJwt.generate_jwt(
                     f"{user_data.id}", int(timestamp.timestamp())
                 )
+                token_model = AccessTokenModel(
+                    access_token, created_at=int(timestamp.timestamp())
+                )
+            token_serializer = self.token_serializer.serialize(token_model)
+            user_serializer = self.user_serializer.serialize(user_data)
             return (
                 jsonify(
                     {
                         "message": "user login successfully",
-                        "data": {
-                            "id": user_data.id,
-                            "username": user_data.username,
-                            "created_at": user_data.created_at,
-                            "updated_at": user_data.updated_at,
-                            "is_active": user_data.is_active,
-                            "provider": user_data.provider,
-                        },
-                        "token": {"access_token": access_token, "token_web": token_web},
+                        "data": user_serializer,
+                        "token": token_serializer,
                     }
                 ),
                 201,

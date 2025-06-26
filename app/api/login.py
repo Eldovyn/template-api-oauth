@@ -3,6 +3,7 @@ from ..controllers import LoginController
 from ..utils import jwt_required
 
 login_router = Blueprint("login_router", __name__)
+login_controller = LoginController()
 
 
 @login_router.post("/short.me/login")
@@ -13,7 +14,9 @@ async def user_login():
     password = data.get("password", "")
     provider = data.get("provider", "")
     token = data.get("token", "")
-    return await LoginController.user_login(provider, token, email, password, timestamp)
+    return await login_controller.user_login(
+        provider, token, email, password, timestamp
+    )
 
 
 @login_router.post("/short.me/logout")
@@ -21,4 +24,4 @@ async def user_login():
 async def user_logout():
     user = request.user
     token = request.token
-    return await LoginController.user_logout(user, token)
+    return await login_controller.user_logout(user, token)

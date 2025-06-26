@@ -8,6 +8,8 @@ class UserModel(me.Document):
     created_at = me.IntField(required=True)
     updated_at = me.IntField(required=True)
     provider = me.StringField(required=True)
+    avatar = me.StringField(required=True)
+    role = me.StringField(required=False, default="user")
     is_active = me.BooleanField(required=False, default=False)
 
     meta = {"collection": "users"}
