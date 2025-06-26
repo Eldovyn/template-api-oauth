@@ -10,6 +10,11 @@ class ProfileController:
     def __init__(self):
         self.user_serializer = UserSerializer()
 
+    async def default_avatar(self):
+        return send_from_directory(
+            "static/images", "default-avatar.webp", mimetype="image/png"
+        )
+
     async def update_email(self, user, email, otp, timestamp):
         errors = {}
         if email is None or (isinstance(email, str) and email.strip() == ""):
