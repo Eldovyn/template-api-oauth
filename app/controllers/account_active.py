@@ -5,11 +5,15 @@ from ..utils import TokenWebAccountActive, TokenEmailAccountActive, SendEmail
 import datetime
 import string
 import random
+from ..serializers import UserSerializer, TokenSerializer
 
 
 class AccountActiveController:
-    @staticmethod
-    async def get_user_account_active_verification(token, timestamp):
+    def __init__(self):
+        self.token_serializer = TokenSerializer()
+        self.user_serializer = UserSerializer()
+
+    async def get_user_account_active_verification(self, token, timestamp):
         created_at = int(timestamp.timestamp())
         errors = {}
         if token is None or (isinstance(token, str) and token.strip() == ""):
@@ -58,34 +62,20 @@ class AccountActiveController:
                 ),
                 404,
             )
+        user_serializer = self.user_serializer.serialize(user_data.user)
+        token_serializer = self.token_serializer.serialize(user_data)
         return (
             jsonify(
                 {
                     "message": "successfully get account active information",
-                    "data": {
-                        "id": user_data.id,
-                        "token_web": user_data.token_web,
-                        "created_at": user_data.created_at,
-                        "updated_at": user_data.updated_at,
-                        "expired_at": user_data.expired_at,
-                    },
-                    "user": {
-                        "id": user_data.user.id,
-                        "username": user_data.user.username,
-                        "email": user_data.user.email,
-                        "created_at": user_data.user.created_at,
-                        "updated_at": user_data.user.updated_at,
-                        "is_active": user_data.user.is_active,
-                        "provider": user_data.user.provider,
-                        "avatar": user_data.user.avatar,
-                    },
+                    "data": token_serializer,
+                    "user": user_serializer,
                 }
             ),
             200,
         )
 
-    @staticmethod
-    async def user_account_active_verification(token, otp, timestamp):
+    async def user_account_active_verification(self, token, otp, timestamp):
         created_at = int(timestamp.timestamp())
         errors = {}
         if token is None or (isinstance(token, str) and token.strip() == ""):
@@ -144,34 +134,22 @@ class AccountActiveController:
             token=user_data.token_email,
             user_id=token_email["user_id"],
         )
+        token_serializer = self.token_serializer.serialize(
+            user_data, token_email_is_null=True
+        )
+        user_serializer = self.user_serializer.serialize(user_data.user)
         return (
             jsonify(
                 {
                     "message": "successfully verify user account",
-                    "data": {
-                        "id": user_data.id,
-                        "token_web": user_data.token_web,
-                        "created_at": user_data.created_at,
-                        "updated_at": user_data.updated_at,
-                        "expired_at": user_data.expired_at,
-                    },
-                    "user": {
-                        "id": user_data.user.id,
-                        "username": user_data.user.username,
-                        "created_at": user_data.user.created_at,
-                        "updated_at": user_data.user.updated_at,
-                        "is_active": user_data.user.is_active,
-                        "provider": user_data.user.provider,
-                        "email": user_data.user.email,
-                        "avatar": user_data.user.avatar,
-                    },
+                    "data": token_serializer,
+                    "user": user_serializer,
                 }
             ),
             201,
         )
 
-    @staticmethod
-    async def user_account_active_information(token, timestamp):
+    async def user_account_active_information(self, token, timestamp):
         created_at = int(timestamp.timestamp())
         errors = {}
         if token is None or (isinstance(token, str) and token.strip() == ""):
@@ -220,34 +198,22 @@ class AccountActiveController:
                 ),
                 404,
             )
+        token_serializer = self.token_serializer.serialize(
+            user_data, token_email_is_null=True
+        )
+        user_serializer = self.user_serializer.serialize(user_data.user)
         return (
             jsonify(
                 {
                     "message": "successfully get account active information",
-                    "data": {
-                        "id": user_data.id,
-                        "token_web": user_data.token_web,
-                        "created_at": user_data.created_at,
-                        "updated_at": user_data.updated_at,
-                        "expired_at": user_data.expired_at,
-                    },
-                    "user": {
-                        "id": user_data.user.id,
-                        "email": user_data.user.email,
-                        "username": user_data.user.username,
-                        "created_at": user_data.user.created_at,
-                        "updated_at": user_data.user.updated_at,
-                        "is_active": user_data.user.is_active,
-                        "provider": user_data.user.provider,
-                        "avatar": user_data.user.avatar,
-                    },
+                    "data": token_serializer,
+                    "user": user_serializer,
                 }
             ),
             200,
         )
 
-    @staticmethod
-    async def send_account_active_email(email, timestamp):
+    async def send_account_active_email(self, email, timestamp):
         errors = {}
         if email is None or (isinstance(email, str) and email.strip() == ""):
             errors.setdefault("email", []).append("IS_REQUIRED")
@@ -306,27 +272,16 @@ class AccountActiveController:
             int(expired_at.timestamp()),
         )
         SendEmail.send_email_verification(user_data, token_email, otp)
+        token_serializer = self.token_serializer.serialize(
+            account_active_data.account_active, token_email_is_null=True
+        )
+        user_serializer = self.user_serializer.serialize(account_active_data.user)
         return (
             jsonify(
                 {
                     "message": "successfully send account active email",
-                    "data": {
-                        "id": account_active_data.id,
-                        "token_web": account_active_data.account_active.token_web,
-                        "created_at": account_active_data.account_active.created_at,
-                        "updated_at": account_active_data.account_active.updated_at,
-                        "expired_at": account_active_data.account_active.expired_at,
-                    },
-                    "user": {
-                        "id": account_active_data.account_active.user.id,
-                        "username": account_active_data.account_active.user.username,
-                        "created_at": account_active_data.account_active.user.created_at,
-                        "updated_at": account_active_data.account_active.user.updated_at,
-                        "is_active": account_active_data.account_active.user.is_active,
-                        "provider": account_active_data.account_active.user.provider,
-                        "avatar": account_active_data.account_active.user.avatar,
-                        "email": account_active_data.account_active.user.email,
-                    },
+                    "data": token_serializer,
+                    "user": user_serializer,
                 }
             ),
             201,

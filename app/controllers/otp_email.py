@@ -7,8 +7,10 @@ import random
 
 
 class OtpEmailController:
-    @staticmethod
-    async def otp_email(user, timestamp):
+    def __init__(self):
+        pass
+
+    async def otp_email(self, user, timestamp):
         karakter = string.ascii_uppercase + string.digits
         expired_at = timestamp + datetime.timedelta(minutes=5)
         otp = "".join(random.choices(karakter, k=6))

@@ -8,12 +8,17 @@ import datetime
 from ..config import provider as PROVIDER
 import random
 import string
+from ..serializers import UserSerializer, TokenSerializer
+from ..models import AccessTokenModel
 
 
 class RegisterController:
-    @staticmethod
+    def __init__(self):
+        self.user_serializer = UserSerializer()
+        self.token_serializer = TokenSerializer()
+
     async def user_register(
-        provider, token, username, email, password, confirm_password, timestamp
+        self, provider, token, username, email, password, confirm_password, timestamp
     ):
         from ..bcrypt import bcrypt
 
@@ -68,9 +73,12 @@ class RegisterController:
                         409,
                     )
                 user_data = await UserDatabase.insert(
-                    provider, avatar, username, email, None, created_at
+                    provider, f"{avatar}", username, email, None, created_at
                 )
-                access_token = await AuthJwt.generate_jwt(f"{user_data.id}", created_at)
+                access_token = await AuthJwt.generate_jwt(user_data.id, created_at)
+                token_model = AccessTokenModel(access_token, int(timestamp.timestamp()))
+                token_serializer = self.token_serializer.serialize(token_model)
+                user_serializer = self.user_serializer.serialize(user_data)
             else:
                 if username is None or (
                     isinstance(username, str) and username.strip() == ""
@@ -146,7 +154,7 @@ class RegisterController:
                     return (
                         jsonify(
                             {
-                                "errors": {"user": ["ALREADY_EXISTS"]},
+                                "errors": {"user": ["IS_ALREADY"]},
                                 "message": "the user already exists",
                             }
                         ),
@@ -165,7 +173,7 @@ class RegisterController:
                 )
                 karakter = string.ascii_uppercase + string.digits
                 otp = "".join(random.choices(karakter, k=6))
-                await AccountActiveDatabase.insert(
+                token_account_active = await AccountActiveDatabase.insert(
                     email,
                     token_web,
                     token_email,
@@ -174,24 +182,14 @@ class RegisterController:
                     int(expired_at.timestamp()),
                 )
                 SendEmail.send_email_verification(user_data, token_email, otp)
+                token_serializer = self.token_serializer.serialize(token_account_active)
+                user_serializer = self.user_serializer.serialize(user_data)
             return (
                 jsonify(
                     {
                         "message": "user registered successfully",
-                        "data": {
-                            "id": user_data.id,
-                            "username": user_data.username,
-                            "created_at": user_data.created_at,
-                            "updated_at": user_data.updated_at,
-                            "is_active": user_data.is_active,
-                            "provider": user_data.provider,
-                            "avatar": user_data.avatar,
-                            "email": user_data.email,
-                        },
-                        "token": {
-                            "access_token": access_token,
-                            "token_web": token_web,
-                        },
+                        "data": user_serializer,
+                        "token": token_serializer,
                     }
                 ),
                 201,

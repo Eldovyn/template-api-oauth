@@ -3,17 +3,14 @@ from flask import jsonify, send_from_directory
 from ..utils import SendEmail
 import re
 from email_validator import validate_email
+from ..serializers import UserSerializer
 
 
 class ProfileController:
-    @staticmethod
-    async def default_avatar():
-        return send_from_directory(
-            "static/images", "default-avatar.webp", mimetype="image/png"
-        )
+    def __init__(self):
+        self.user_serializer = UserSerializer()
 
-    @staticmethod
-    async def update_email(user, email, otp, timestamp):
+    async def update_email(self, user, email, otp, timestamp):
         errors = {}
         if email is None or (isinstance(email, str) and email.strip() == ""):
             errors.setdefault("email", []).append("IS_REQUIRED")
@@ -46,27 +43,18 @@ class ProfileController:
                 409,
             )
         SendEmail.send_email_update_email(user_data.user, user.email)
+        user_serializer = self.user_serializer.serialize(user_data.user)
         return (
             jsonify(
                 {
                     "message": "success update email",
-                    "data": {
-                        "id": user_data.user.id,
-                        "email": user_data.user.email,
-                        "username": user_data.user.username,
-                        "created_at": user_data.user.created_at,
-                        "updated_at": user_data.user.updated_at,
-                        "is_active": user_data.user.is_active,
-                        "avatar": user_data.user.avatar,
-                        "provider": user_data.user.provider,
-                    },
+                    "data": user_serializer,
                 }
             ),
             201,
         )
 
-    @staticmethod
-    async def update_password(user, password, confirm_password, timestamp):
+    async def update_password(self, user, password, confirm_password, timestamp):
         from ..bcrypt import bcrypt
 
         errors = {}
@@ -120,27 +108,18 @@ class ProfileController:
                 401,
             )
         SendEmail.send_email_update_password(user_data)
+        user_serializer = self.user_serializer.serialize(user_data)
         return (
             jsonify(
                 {
                     "message": "successfully update password",
-                    "data": {
-                        "id": user_data.id,
-                        "email": user_data.email,
-                        "username": user_data.username,
-                        "created_at": user_data.created_at,
-                        "updated_at": user_data.updated_at,
-                        "is_active": user_data.is_active,
-                        "avatar": user_data.avatar,
-                        "provider": user_data.provider,
-                    },
+                    "data": user_serializer,
                 }
             ),
             201,
         )
 
-    @staticmethod
-    async def update_username(user, username):
+    async def update_username(self, user, username):
         errors = {}
         if username is None or (isinstance(username, str) and username.strip() == ""):
             errors.setdefault("username", []).append("IS_REQUIRED")
@@ -170,41 +149,24 @@ class ProfileController:
                 401,
             )
         SendEmail.send_email_update_username(user_data, username)
+        user_serializer = self.user_serializer.serialize(user_data)
         return (
             jsonify(
                 {
                     "message": "successfully update username",
-                    "data": {
-                        "id": user_data.id,
-                        "email": user_data.email,
-                        "username": user_data.username,
-                        "created_at": user_data.created_at,
-                        "updated_at": user_data.updated_at,
-                        "is_active": user_data.is_active,
-                        "avatar": user_data.avatar,
-                        "provider": user_data.provider,
-                    },
+                    "data": user_serializer,
                 }
             ),
             201,
         )
 
-    @staticmethod
-    async def user_me(user):
+    async def user_me(self, user):
+        user_serializer = self.user_serializer.serialize(user)
         return (
             jsonify(
                 {
                     "message": "successfully get user",
-                    "data": {
-                        "id": user.id,
-                        "email": user.email,
-                        "username": user.username,
-                        "created_at": user.created_at,
-                        "updated_at": user.updated_at,
-                        "is_active": user.is_active,
-                        "avatar": user.avatar,
-                        "provider": user.provider,
-                    },
+                    "data": user_serializer,
                 }
             ),
             200,
