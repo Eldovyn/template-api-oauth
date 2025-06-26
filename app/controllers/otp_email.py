@@ -29,4 +29,26 @@ class OtpEmailController:
                 401,
             )
         SendEmail.send_email_otp(user, otp)
-        return jsonify({"message": "successfully send otp"}), 201
+        return (
+            jsonify(
+                {
+                    "message": "successfully send otp",
+                    "data": {
+                        "id": f"{data_otp.id}",
+                        "created_at": data_otp.created_at,
+                        "expired_at": data_otp.expired_at,
+                    },
+                    "user": {
+                        "id": user.id,
+                        "email": user.email,
+                        "username": user.username,
+                        "created_at": user.created_at,
+                        "updated_at": user.updated_at,
+                        "is_active": user.is_active,
+                        "avatar": user.avatar,
+                        "provider": user.provider,
+                    },
+                }
+            ),
+            201,
+        )

@@ -194,5 +194,5 @@ class RegisterController:
                 ),
                 201,
             )
-        except Exception:
-            return jsonify({"message": "invalid request"}), 400
+        except Exception as e:
+            return jsonify({"message": f"{e}"}), 400
