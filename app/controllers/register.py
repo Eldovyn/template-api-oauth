@@ -5,7 +5,7 @@ import requests
 import re
 from ..utils import TokenEmailAccountActive, TokenWebAccountActive, SendEmail, AuthJwt
 import datetime
-from ..config import provider as PROVIDER
+from ..configs import provider as PROVIDER
 import random
 import string
 from ..serializers import UserSerializer, TokenSerializer

@@ -1,26 +1,17 @@
-from flask import Flask, request, jsonify
+from flask import Flask
 import os
 from .database import db
-from .celery_app import celery_init_app
 from .mail import mail
-import datetime
-from .models import AccountActiveModel, ResetPasswordModel, OtpEmailModel
-from celery.schedules import crontab
-from .config import (
-    database_mongodb,
-    database_mongodb_url,
-    celery_broker_url,
-    celery_result_backend,
-    smtp_email,
-    smtp_password,
-    smtp_host,
-    smtp_port,
-    celery_url,
-)
-from werkzeug.exceptions import BadRequest
+from .config import Config
 from .bcrypt import bcrypt
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+from .extensions import limiter
+from .middlewares import register_middlewares
+from .error_handlers import register_error_handlers
+from .routers import register_blueprints
+from .celery_app import celery_init_app
+import datetime
+from celery.schedules import crontab
+from .models import AccountActiveModel, ResetPasswordModel, OtpEmailModel
 
 
 def create_app(test_config=None):
@@ -30,25 +21,7 @@ def create_app(test_config=None):
     private_key_path = os.path.join(BASE_DIR, "keys", "private.pem")
     public_key_path = os.path.join(BASE_DIR, "keys", "public.pem")
 
-    app.config.from_mapping(
-        CELERY={
-            "broker_url": celery_broker_url,
-            "result_backend": celery_result_backend,
-            "task_ignore_result": True,
-        },
-        MONGODB_SETTINGS={
-            "db": database_mongodb,
-            "host": database_mongodb_url,
-            "connect": False,
-        },
-        MAIL_SERVER=smtp_host,
-        MAIL_PORT=smtp_port,
-        MAIL_USE_TLS=True,
-        MAIL_USE_SSL=False,
-        MAIL_USERNAME=smtp_email,
-        MAIL_PASSWORD=smtp_password,
-        MAIL_DEFAULT_SENDER=smtp_email,
-    )
+    app.config.from_object(Config)
 
     with open(private_key_path, "rb") as f:
         app.config["PRIVATE_KEY"] = f.read()
@@ -66,18 +39,12 @@ def create_app(test_config=None):
     except OSError:
         pass
 
-    global celery_app, limiter
+    global celery_app
     celery_app = celery_init_app(app)
-    bcrypt.init_app(app)
     db.init_app(app)
     mail.init_app(app)
-
-    limiter = Limiter(
-        get_remote_address,
-        app=app,
-        default_limits=["200 per day", "50 per hour"],
-        storage_uri=celery_url,
-    )
+    bcrypt.init_app(app)
+    limiter.init_app(app)
 
     @celery_app.task(name="update_data_every_5_minutes")
     def update_data_every_5_minutes():
@@ -116,45 +83,8 @@ def create_app(test_config=None):
         },
     }
 
-    with app.app_context():
-        from .api.register import register_router
-        from .api.login import login_router
-        from .api.account_active import account_active_router
-        from .api.reset_password import reset_password_router
-        from .api.me import me_router
-        from .api.profile import profile_router
-        from .api.otp_email import otp_email_router
-
-        app.register_blueprint(login_router)
-        app.register_blueprint(register_router)
-        app.register_blueprint(account_active_router)
-        app.register_blueprint(reset_password_router)
-        app.register_blueprint(me_router)
-        app.register_blueprint(profile_router)
-        app.register_blueprint(otp_email_router)
-
-    @app.after_request
-    async def add_cors_headers(response):
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = (
-            "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-        )
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-        return response
-
-    @app.before_request
-    async def before_request():
-        request.timestamp = datetime.datetime.now(datetime.timezone.utc)
-
-    @app.errorhandler(BadRequest)
-    async def handle_bad_request(e):
-        return (
-            jsonify(
-                {
-                    "message": str(e.description),
-                }
-            ),
-            400,
-        )
+    register_blueprints(app)
+    register_middlewares(app)
+    register_error_handlers(app)
 
     return app

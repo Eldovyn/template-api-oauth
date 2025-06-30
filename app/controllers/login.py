@@ -8,7 +8,6 @@ from email_validator import validate_email
 import requests
 from ..utils import AuthJwt, TokenEmailAccountActive, TokenWebAccountActive, SendEmail
 import datetime
-from ..config import provider as PROVIDER
 import string
 import random
 from ..serializers import UserSerializer, TokenSerializer
@@ -37,6 +36,7 @@ class LoginController:
 
     async def user_login(self, provider, token, email, password, timestamp):
         from ..bcrypt import bcrypt
+        from ..configs import provider as PROVIDER
 
         token_web = None
         access_token = None
