@@ -1,5 +1,10 @@
 from flask import jsonify
-from werkzeug.exceptions import BadRequest, NotFound, InternalServerError
+from werkzeug.exceptions import (
+    BadRequest,
+    NotFound,
+    InternalServerError,
+    TooManyRequests,
+)
 
 
 def register_error_handlers(app):
@@ -18,3 +23,7 @@ def register_error_handlers(app):
     @app.errorhandler(Exception)
     async def handle_unexpected_error(e):
         return jsonify({"message": "an unexpected error occurred"}), 500
+
+    @app.errorhandler(TooManyRequests)
+    async def handle_too_many_requests(e):
+        return jsonify({"message": "too many requests"}), 429
