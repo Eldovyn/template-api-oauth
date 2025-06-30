@@ -1,6 +1,5 @@
 import datetime
-from flask import request, jsonify
-from werkzeug.exceptions import BadRequest
+from flask import request
 
 
 def register_middlewares(app):

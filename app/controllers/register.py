@@ -20,7 +20,7 @@ class RegisterController:
     async def user_register(
         self, provider, token, username, email, password, confirm_password, timestamp
     ):
-        from ..bcrypt import bcrypt
+        from ..extensions import bcrypt
 
         access_token = None
         token_web = None

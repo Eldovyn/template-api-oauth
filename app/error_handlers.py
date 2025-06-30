@@ -9,12 +9,12 @@ def register_error_handlers(app):
 
     @app.errorhandler(NotFound)
     async def handle_not_found(e):
-        return jsonify({"message": "Resource not found"}), 404
+        return jsonify({"message": "resource not found"}), 404
 
     @app.errorhandler(InternalServerError)
     async def handle_internal_server_error(e):
-        return jsonify({"message": "Internal server error"}), 500
+        return jsonify({"message": "internal server error"}), 500
 
     @app.errorhandler(Exception)
     async def handle_unexpected_error(e):
-        return jsonify({"message": "An unexpected error occurred"}), 500
+        return jsonify({"message": "an unexpected error occurred"}), 500

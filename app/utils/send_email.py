@@ -1,4 +1,4 @@
-from ..task import send_email_task
+from ..tasks import send_email_task
 from ..configs import web_short_me
 
 

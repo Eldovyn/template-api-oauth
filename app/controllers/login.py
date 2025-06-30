@@ -8,6 +8,7 @@ from email_validator import validate_email
 import requests
 from ..utils import AuthJwt, TokenEmailAccountActive, TokenWebAccountActive, SendEmail
 import datetime
+from ..configs import provider as PROVIDER
 import string
 import random
 from ..serializers import UserSerializer, TokenSerializer
@@ -35,8 +36,7 @@ class LoginController:
         return jsonify({"message": "successfully logout"}), 201
 
     async def user_login(self, provider, token, email, password, timestamp):
-        from ..bcrypt import bcrypt
-        from ..configs import provider as PROVIDER
+        from ..extensions import bcrypt
 
         token_web = None
         access_token = None
