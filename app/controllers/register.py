@@ -5,7 +5,7 @@ import requests
 import re
 from ..utils import TokenEmailAccountActive, TokenWebAccountActive, SendEmail, AuthJwt
 import datetime
-from ..config import provider as PROVIDER
+from ..configs import provider as PROVIDER
 import random
 import string
 from ..serializers import UserSerializer, TokenSerializer
@@ -20,7 +20,7 @@ class RegisterController:
     async def user_register(
         self, provider, token, username, email, password, confirm_password, timestamp
     ):
-        from ..bcrypt import bcrypt
+        from ..extensions import bcrypt
 
         access_token = None
         token_web = None
@@ -194,5 +194,5 @@ class RegisterController:
                 ),
                 201,
             )
-        except Exception:
-            return jsonify({"message": "invalid request"}), 400
+        except Exception as e:
+            return jsonify({"message": f"{e}"}), 400

@@ -1,5 +1,5 @@
 from ..databases import UserDatabase
-from flask import jsonify
+from flask import jsonify, send_from_directory
 from ..utils import SendEmail
 import re
 from email_validator import validate_email
@@ -9,6 +9,11 @@ from ..serializers import UserSerializer
 class ProfileController:
     def __init__(self):
         self.user_serializer = UserSerializer()
+
+    async def default_avatar(self):
+        return send_from_directory(
+            "static/images", "default-avatar.webp", mimetype="image/png"
+        )
 
     async def update_email(self, user, email, otp, timestamp):
         errors = {}

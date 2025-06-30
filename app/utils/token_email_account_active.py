@@ -1,6 +1,6 @@
 from .token import Token
 from itsdangerous.url_safe import URLSafeSerializer
-from ..config import salt_account_active_email, secret_key_account_active_email
+from ..configs import salt_account_active_email, secret_key_account_active_email
 
 
 class TokenEmailAccountActive(Token):
