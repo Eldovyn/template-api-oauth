@@ -1,5 +1,5 @@
-from . import celery_app
-from .email_utils import send_email
+from ..email_utils import send_email
+from .. import celery_app
 
 
 @celery_app.task(name="send_email_task")

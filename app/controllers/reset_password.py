@@ -77,7 +77,7 @@ class ResetPasswordController:
     async def user_reset_password_verification(
         self, token, new_password, confirm_password, timestamp
     ):
-        from ..bcrypt import bcrypt
+        from ..extensions import bcrypt
 
         created_at = int(timestamp.timestamp())
         errors = {}

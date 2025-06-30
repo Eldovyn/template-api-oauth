@@ -1,6 +1,6 @@
 from .token import Token
 from itsdangerous.url_safe import URLSafeSerializer
-from ..config import salt_reset_password_email, secret_key_reset_password_email
+from ..configs import salt_reset_password_email, secret_key_reset_password_email
 
 
 class TokenEmailResetPassword(Token):
