@@ -4,10 +4,17 @@ from ..models import UserModel, OtpEmailModel
 
 class UserDatabase(Database):
     @staticmethod
-    async def insert(provider, avatar, username, email, password, created_at):
+    async def insert(
+        provider,
+        avatar,
+        username,
+        email,
+        password,
+        created_at,
+    ):
         user_data = UserModel(
-            username=username,
             email=email,
+            username=username,
             password=password,
             created_at=created_at,
             updated_at=created_at,
@@ -27,30 +34,34 @@ class UserDatabase(Database):
     @staticmethod
     async def update(category, **kwargs):
         user_id = kwargs.get("user_id")
-        username = kwargs.get("username")
         password = kwargs.get("password")
         email = kwargs.get("email")
         created_at = kwargs.get("created_at")
-        otp = kwargs.get("otp")
-        if category == "username":
-            if user_data := UserModel.objects(id=user_id).first():
-                user_data.username = username
-                user_data.save()
-                return user_data
-        if category == "password":
-            if user_data := UserModel.objects(id=user_id).first():
+        deleted_id = kwargs.get("deleted_id")
+        avatar = kwargs.get("avatar")
+        if user_data := UserModel.objects(id=user_id).first():
+            if category == "password":
                 user_data.password = password
                 user_data.updated_at = created_at
                 user_data.save()
                 return user_data
-        if category == "email":
-            if user_data := UserModel.objects(id=user_id).first():
-                if data_otp := OtpEmailModel.objects(user=user_data, otp=otp).first():
+            if category == "profile":
+                if email:
                     user_data.email = email
-                    user_data.updated_at = created_at
-                    user_data.save()
-                    data_otp.delete()
-                    return data_otp
+                if avatar:
+                    user_data.avatar = avatar
+                await user_data.unique_field()
+                user_data.save()
+                return user_data
+            if category == "deleted_id_by_user_id":
+                user_data.deleted_id = deleted_id
+                user_data.updated_at = created_at
+                user_data.save()
+                return user_data
+            if category == "cancle_deleted_id_by_user_id":
+                user_data.deleted_id = None
+                user_data.save()
+                return user_data
 
     @staticmethod
     async def get(category, **kwargs):

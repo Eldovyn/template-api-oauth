@@ -1,4 +1,4 @@
-from ..email_utils import send_email
+from ..utils import send_email
 from .. import celery_app
 
 

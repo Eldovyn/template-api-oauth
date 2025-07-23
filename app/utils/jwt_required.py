@@ -29,21 +29,19 @@ def jwt_required():
                     jsonify(
                         {
                             "message": "invalid authorization header",
-                            "errors": {"authorization": ["IS_INVALID"]},
                         }
                     ),
                     401,
                 )
 
             token = auth_header.split()[1]
-            payload = AuthJwt.verify_token(token)
+            payload = AuthJwt.verify_token_sync(token)
 
             if payload is None:
                 return (
                     jsonify(
                         {
                             "message": "invalid or expired token",
-                            "errors": {"token": ["IS_INVALID"]},
                         }
                     ),
                     401,
@@ -57,7 +55,6 @@ def jwt_required():
                     jsonify(
                         {
                             "message": "invalid or expired token",
-                            "errors": {"token": ["IS_INVALID"]},
                         }
                     ),
                     401,
@@ -69,7 +66,16 @@ def jwt_required():
                     jsonify(
                         {
                             "message": "invalid or expired token",
-                            "errors": {"token": ["IS_INVALID"]},
+                        }
+                    ),
+                    401,
+                )
+
+            if user_data.is_deleted:
+                return (
+                    jsonify(
+                        {
+                            "message": "user is deleted",
                         }
                     ),
                     401,
@@ -80,7 +86,6 @@ def jwt_required():
                     jsonify(
                         {
                             "message": "invalid or expired token",
-                            "errors": {"token": ["IS_INVALID"]},
                         }
                     ),
                     401,
@@ -91,7 +96,6 @@ def jwt_required():
                     jsonify(
                         {
                             "message": "invalid or expired token",
-                            "errors": {"token": ["IS_INVALID"]},
                         }
                     ),
                     401,
@@ -102,7 +106,6 @@ def jwt_required():
                     jsonify(
                         {
                             "message": "user is not active",
-                            "errors": {"user": ["NOT_ACTIVE"]},
                         }
                     ),
                     401,

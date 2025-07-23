@@ -6,7 +6,7 @@ login_router = Blueprint("login_router", __name__)
 login_controller = LoginController()
 
 
-@login_router.post("/short.me/login")
+@login_router.post("/sludgify/login")
 async def user_login():
     data = request.json
     timestamp = request.timestamp
@@ -19,7 +19,7 @@ async def user_login():
     )
 
 
-@login_router.post("/short.me/logout")
+@login_router.post("/sludgify/logout")
 @jwt_required()
 async def user_logout():
     user = request.user

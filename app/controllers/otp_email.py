@@ -4,11 +4,12 @@ from flask import jsonify
 import string
 import datetime
 import random
+from ..serializers import UserSerializer
 
 
 class OtpEmailController:
     def __init__(self):
-        pass
+        self.user_seliazer = UserSerializer()
 
     async def otp_email(self, user, timestamp):
         karakter = string.ascii_uppercase + string.digits
@@ -23,12 +24,12 @@ class OtpEmailController:
                 jsonify(
                     {
                         "message": "invalid or expired token",
-                        "errors": {"token": ["IS_INVALID"]},
                     }
                 ),
                 401,
             )
         SendEmail.send_email_otp(user, otp)
+        user_me = self.user_seliazer.serialize(user)
         return (
             jsonify(
                 {
@@ -38,16 +39,7 @@ class OtpEmailController:
                         "created_at": data_otp.created_at,
                         "expired_at": data_otp.expired_at,
                     },
-                    "user": {
-                        "id": user.id,
-                        "email": user.email,
-                        "username": user.username,
-                        "created_at": user.created_at,
-                        "updated_at": user.updated_at,
-                        "is_active": user.is_active,
-                        "avatar": user.avatar,
-                        "provider": user.provider,
-                    },
+                    "user": user_me,
                 }
             ),
             201,

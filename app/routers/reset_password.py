@@ -5,7 +5,7 @@ reset_password_router = Blueprint("reset_password_router", __name__)
 reset_password_controller = ResetPasswordController()
 
 
-@reset_password_router.post("/short.me/auth/reset-password/request")
+@reset_password_router.post("/sludgify/auth/reset-password/request")
 async def send_reset_password_email():
     data = request.json
     timestamp = request.timestamp
@@ -13,7 +13,7 @@ async def send_reset_password_email():
     return await reset_password_controller.send_reset_password_email(email, timestamp)
 
 
-@reset_password_router.get("/short.me/auth/reset-password/status/<string:token>")
+@reset_password_router.get("/sludgify/auth/reset-password/status/<string:token>")
 async def user_reset_password_information(token):
     timestamp = request.timestamp
     return await reset_password_controller.user_reset_password_information(
@@ -21,7 +21,9 @@ async def user_reset_password_information(token):
     )
 
 
-@reset_password_router.get("/short.me/auth/reset-password/verify/<string:token>")
+@reset_password_router.get(
+    "/sludgify/auth/reset-password/password-changed/<string:token>"
+)
 async def get_user_reset_password_verification(token):
     timestamp = request.timestamp
     return await reset_password_controller.get_user_reset_password_verification(
@@ -29,7 +31,9 @@ async def get_user_reset_password_verification(token):
     )
 
 
-@reset_password_router.patch("/short.me/auth/reset-password/confirm/<string:token>")
+@reset_password_router.patch(
+    "/sludgify/auth/reset-password/password-changed/<string:token>"
+)
 async def user_reset_password_verification(token):
     timestamp = request.timestamp
     json = request.json

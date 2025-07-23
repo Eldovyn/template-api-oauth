@@ -8,16 +8,18 @@ from email_validator import validate_email
 import requests
 from ..utils import AuthJwt, TokenEmailAccountActive, TokenWebAccountActive, SendEmail
 import datetime
-from ..configs import provider as PROVIDER
+from ..config import provider as PROVIDER, web_short_me
 import string
 import random
 from ..serializers import UserSerializer, TokenSerializer
 from ..models import AccessTokenModel
+from ..tasks import cancle_deleted_account
+import traceback
 
 
 class LoginController:
     def __init__(self):
-        self.user_serializer = UserSerializer()
+        self.user_seliazer = UserSerializer()
         self.token_serializer = TokenSerializer()
 
     async def user_logout(self, user, token):
@@ -28,7 +30,6 @@ class LoginController:
                 jsonify(
                     {
                         "message": "invalid or expired token",
-                        "errors": {"token": ["IS_INVALID"]},
                     }
                 ),
                 401,
@@ -60,7 +61,10 @@ class LoginController:
                     if not isinstance(token, str):
                         errors.setdefault("token", []).append("MUST_TEXT")
                 if errors:
-                    return jsonify({"errors": errors, "message": "invalid data"}), 400
+                    return (
+                        jsonify({"errors": errors, "message": "validations error"}),
+                        400,
+                    )
                 url = f"https://www.googleapis.com/oauth2/v3/userinfo?access_token={token}"
                 response = requests.get(url)
                 resp = response.json()
@@ -71,7 +75,7 @@ class LoginController:
                         jsonify(
                             {
                                 "errors": {"token": ["IS_INVALID"]},
-                                "message": "invalid data",
+                                "message": "validations error",
                             }
                         ),
                         400,
@@ -80,7 +84,6 @@ class LoginController:
                     return (
                         jsonify(
                             {
-                                "errors": {"user": ["NOT_FOUND"]},
                                 "message": "you are not registered",
                             }
                         ),
@@ -90,7 +93,6 @@ class LoginController:
                     return (
                         jsonify(
                             {
-                                "errors": {"user": ["NOT_ACTIVE"]},
                                 "message": "user is not active",
                             }
                         ),
@@ -100,15 +102,15 @@ class LoginController:
                     return (
                         jsonify(
                             {
-                                "errors": {"user": ["NOT_FOUND"]},
                                 "message": "you are not registered",
                             }
                         ),
                         401,
                     )
-                access_token = await AuthJwt.generate_jwt(
+                access_token = await AuthJwt.generate_jwt_async(
                     f"{user_data.id}", int(timestamp.timestamp())
                 )
+                user_me = self.user_seliazer.serialize(user_data)
             else:
                 if email is None or (isinstance(email, str) and email.strip() == ""):
                     errors.setdefault("email", []).append("IS_REQUIRED")
@@ -128,12 +130,19 @@ class LoginController:
                     if not isinstance(password, str):
                         errors.setdefault("password", []).append("MUST_TEXT")
                 if errors:
-                    return jsonify({"errors": errors, "message": "invalid data"}), 400
+                    return (
+                        jsonify(
+                            {
+                                "errors": errors,
+                                "message": "validations error",
+                            }
+                        ),
+                        400,
+                    )
                 if not (user_data := await UserDatabase.get("by_email", email=email)):
                     return (
                         jsonify(
                             {
-                                "errors": {"user": ["NOT_FOUND"]},
                                 "message": "invalid email or password",
                             }
                         ),
@@ -143,7 +152,6 @@ class LoginController:
                     return (
                         jsonify(
                             {
-                                "errors": {"user": ["NOT_FOUND"]},
                                 "message": "invalid email or password",
                             }
                         ),
@@ -159,7 +167,7 @@ class LoginController:
                     )
                     karakter = string.ascii_uppercase + string.digits
                     otp = "".join(random.choices(karakter, k=6))
-                    token_account_active = await AccountActiveDatabase.insert(
+                    await AccountActiveDatabase.insert(
                         email,
                         token_web,
                         token_email,
@@ -167,17 +175,40 @@ class LoginController:
                         int(timestamp.timestamp()),
                         int(expired_at.timestamp()),
                     )
-                    SendEmail.send_email_verification(user_data, token_email, otp)
-                    user_serializer = self.user_serializer.serialize(user_data)
-                    token_serializer = self.token_serializer.serialize(
-                        token_account_active, token_email_is_null=True
+                    SendEmail.send_email(
+                        "Verification Your Account",
+                        [user_data.email],
+                        f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Active</title>
+</head>
+<body>
+    <p>Hello {user_data.email},</p>
+    <p>Someone has requested a link to verify your account, and you can do this through the link below.</p>
+    <p>your otp is {otp}.</p>
+    <p>
+        <a href="{web_short_me}/account-active?token={token_email}">
+            Click here to activate your account
+        </a>
+    </p>
+    <p>If you didn't request this, please ignore this email.</p>
+</body>
+</html>
+                """,
+                    )
+                    user_me = self.user_seliazer.serialize(user_data)
+                    token_data = self.token_serializer.serialize(
+                        token_web, token_email_is_null=True
                     )
                     return (
                         jsonify(
                             {
                                 "message": "user not active",
-                                "data": user_serializer,
-                                "token": token_serializer,
+                                "data": user_me,
+                                "token": token_data,
                             }
                         ),
                         403,
@@ -186,23 +217,44 @@ class LoginController:
                     await AccountActiveDatabase.delete(
                         "by_user_id", user_id=user_data.id
                     )
-                access_token = await AuthJwt.generate_jwt(
+                access_token = await AuthJwt.generate_jwt_async(
                     f"{user_data.id}", int(timestamp.timestamp())
                 )
-                token_model = AccessTokenModel(
-                    access_token, created_at=int(timestamp.timestamp())
+                user_me = self.user_seliazer.serialize(user_data)
+            token_model = AccessTokenModel(access_token, int(timestamp.timestamp()))
+            token_data = self.token_serializer.serialize(token_model)
+            if user_data.deleted_id:
+                SendEmail.send_email(
+                    "Cancle Deleted Account",
+                    [user_data.email],
+                    f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Cancle Deleted Account</title>
+</head>
+        <body>
+            <p>Hello {user_data.first_name} {user_data.last_name},</p>
+            <p>your account has been cancled from deleted account.</p>
+        </body>
+        </html>
+                        """,
                 )
-            token_serializer = self.token_serializer.serialize(token_model)
-            user_serializer = self.user_serializer.serialize(user_data)
+                cancle_deleted_account(f"{user_data.deleted_id}")
+                await UserDatabase.update(
+                    "cancle_deleted_id_by_user_id", user_id=f"{user_data.id}"
+                )
             return (
                 jsonify(
                     {
                         "message": "user login successfully",
-                        "data": user_serializer,
-                        "token": token_serializer,
+                        "data": user_me,
+                        "token": token_data,
                     }
                 ),
                 201,
             )
         except Exception:
+            traceback.print_exc()
             return jsonify({"message": "invalid request"}), 400

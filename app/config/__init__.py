@@ -1,21 +1,10 @@
-from .configs import (
-    database_mongodb,
-    database_mongodb_url,
-    celery_broker_url,
-    celery_result_backend,
-    smtp_email,
-    smtp_password,
-    smtp_host,
-    smtp_port,
-    celery_url,
-)
+from .config import *
 
 
 class Config:
     CELERY = {
         "broker_url": celery_broker_url,
         "result_backend": celery_result_backend,
-        "task_ignore_result": True,
     }
 
     MONGODB_SETTINGS = {
@@ -33,4 +22,3 @@ class Config:
     MAIL_DEFAULT_SENDER = smtp_email
 
     CORS_SUPPORTS_CREDENTIALS = True
-    CELERY_URL = celery_url

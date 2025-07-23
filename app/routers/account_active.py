@@ -5,7 +5,7 @@ account_active_router = Blueprint("account_active_router", __name__)
 account_active_controller = AccountActiveController()
 
 
-@account_active_router.post("/short.me/auth/account-active/request")
+@account_active_router.post("/sludgify/auth/account-active/request")
 async def send_account_active_email():
     data = request.json
     timestamp = request.timestamp
@@ -13,7 +13,7 @@ async def send_account_active_email():
     return await account_active_controller.send_account_active_email(email, timestamp)
 
 
-@account_active_router.get("/short.me/auth/account-active/status/<string:token>")
+@account_active_router.get("/sludgify/auth/account-active/status/<string:token>")
 async def user_account_active_information(token):
     timestamp = request.timestamp
     return await account_active_controller.user_account_active_information(
@@ -21,7 +21,7 @@ async def user_account_active_information(token):
     )
 
 
-@account_active_router.get("/short.me/auth/account-active/activation/<string:token>")
+@account_active_router.get("/sludgify/auth/account-active/activation/<string:token>")
 async def get_user_account_active_verification(token):
     timestamp = request.timestamp
     return await account_active_controller.get_user_account_active_verification(
@@ -29,7 +29,7 @@ async def get_user_account_active_verification(token):
     )
 
 
-@account_active_router.patch("/short.me/auth/account-active/activation/<string:token>")
+@account_active_router.patch("/sludgify/auth/account-active/activation/<string:token>")
 async def user_account_active_verification(token):
     json = request.json
     otp = json.get("otp", "")

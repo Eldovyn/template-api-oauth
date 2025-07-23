@@ -5,7 +5,7 @@ import requests
 import re
 from ..utils import TokenEmailAccountActive, TokenWebAccountActive, SendEmail, AuthJwt
 import datetime
-from ..configs import provider as PROVIDER
+from ..config import provider as PROVIDER, web_short_me
 import random
 import string
 from ..serializers import UserSerializer, TokenSerializer
@@ -14,11 +14,18 @@ from ..models import AccessTokenModel
 
 class RegisterController:
     def __init__(self):
-        self.user_serializer = UserSerializer()
+        self.user_seliazer = UserSerializer()
         self.token_serializer = TokenSerializer()
 
     async def user_register(
-        self, provider, token, username, email, password, confirm_password, timestamp
+        self,
+        provider,
+        token,
+        username,
+        email,
+        password,
+        confirm_password,
+        timestamp,
     ):
         from ..extensions import bcrypt
 
@@ -44,7 +51,17 @@ class RegisterController:
                     if not isinstance(token, str):
                         errors.setdefault("token", []).append("MUST_TEXT")
                 if errors:
-                    return jsonify({"errors": errors, "message": "invalid data"}), 400
+                    total_errors = sum(len(v) for v in errors.values())
+                    return (
+                        jsonify(
+                            {
+                                "errors": errors,
+                                "message": "validations error",
+                                "total_errors": total_errors,
+                            }
+                        ),
+                        400,
+                    )
                 url = f"https://www.googleapis.com/oauth2/v3/userinfo?access_token={token}"
                 response = requests.get(url)
                 resp = response.json()
@@ -56,8 +73,7 @@ class RegisterController:
                     return (
                         jsonify(
                             {
-                                "errors": {"token": ["IS_INVALID"]},
-                                "message": "invalid data",
+                                "message": "validations error",
                             }
                         ),
                         400,
@@ -66,19 +82,22 @@ class RegisterController:
                     return (
                         jsonify(
                             {
-                                "errors": {"user": ["USER_ALREADY_EXISTS"]},
                                 "message": "the user already exists",
                             }
                         ),
                         409,
                     )
                 user_data = await UserDatabase.insert(
-                    provider, f"{avatar}", username, email, None, created_at
+                    provider, avatar, username, email, None, created_at
                 )
-                access_token = await AuthJwt.generate_jwt(user_data.id, created_at)
-                token_model = AccessTokenModel(access_token, int(timestamp.timestamp()))
-                token_serializer = self.token_serializer.serialize(token_model)
-                user_serializer = self.user_serializer.serialize(user_data)
+                user_me = self.user_seliazer.serialize(user_data)
+                access_token = await AuthJwt.generate_jwt_async(
+                    f"{user_data.id}", created_at
+                )
+                access_token_model = AccessTokenModel(
+                    access_token=access_token, created_at=created_at
+                )
+                token_data = self.token_serializer.serialize(access_token_model)
             else:
                 if username is None or (
                     isinstance(username, str) and username.strip() == ""
@@ -89,14 +108,14 @@ class RegisterController:
                         errors.setdefault("username", []).append("MUST_TEXT")
                     if isinstance(username, str) and len(username) < 5:
                         errors.setdefault("username", []).append("TOO_SHORT")
-                    if isinstance(username, str) and len(username) > 15:
+                    if isinstance(username, str) and len(username) > 50:
                         errors.setdefault("username", []).append("TOO_LONG")
                 if email is None or (isinstance(email, str) and email.strip() == ""):
                     errors.setdefault("email", []).append("IS_REQUIRED")
                 else:
                     if not isinstance(email, str):
                         errors.setdefault("email", []).append("MUST_TEXT")
-                    if isinstance(email, str) and len(email) < 6:
+                    if isinstance(email, str) and len(email) < 5:
                         errors.setdefault("email", []).append("TOO_SHORT")
                     if isinstance(email, str) and len(email) > 50:
                         errors.setdefault("email", []).append("TOO_LONG")
@@ -143,7 +162,17 @@ class RegisterController:
                     if not re.search(r"[A-Za-z]", password):
                         errors.setdefault("password_security", []).append("NO_LETTER")
                 if errors:
-                    return jsonify({"errors": errors, "message": "invalid data"}), 400
+                    total_errors = sum(len(v) for v in errors.values())
+                    return (
+                        jsonify(
+                            {
+                                "errors": errors,
+                                "message": "validations error",
+                                "total_errors": total_errors,
+                            }
+                        ),
+                        400,
+                    )
                 result_password = bcrypt.generate_password_hash(password).decode(
                     "utf-8"
                 )
@@ -154,7 +183,6 @@ class RegisterController:
                     return (
                         jsonify(
                             {
-                                "errors": {"user": ["IS_ALREADY"]},
                                 "message": "the user already exists",
                             }
                         ),
@@ -162,8 +190,14 @@ class RegisterController:
                     )
             if provider != "google":
                 user_data = await UserDatabase.insert(
-                    provider, f"{avatar}", username, email, result_password, created_at
+                    provider,
+                    f"{avatar}",
+                    username,
+                    email,
+                    result_password,
+                    created_at,
                 )
+                user_me = self.user_seliazer.serialize(user_data)
                 expired_at = timestamp + datetime.timedelta(minutes=5)
                 token_web = await TokenWebAccountActive.insert(
                     f"{user_data.id}", int(timestamp.timestamp())
@@ -181,15 +215,39 @@ class RegisterController:
                     int(timestamp.timestamp()),
                     int(expired_at.timestamp()),
                 )
-                SendEmail.send_email_verification(user_data, token_email, otp)
-                token_serializer = self.token_serializer.serialize(token_account_active)
-                user_serializer = self.user_serializer.serialize(user_data)
+                SendEmail.send_email(
+                    "Verification Your Account",
+                    [user_data.email],
+                    f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Active</title>
+</head>
+<body>
+    <p>Hello {user_data.email},</p>
+    <p>Someone has requested a link to verify your account, and you can do this through the link below.</p>
+    <p>your otp is {otp}.</p>
+    <p>
+        <a href="{web_short_me}/account-active?token={token_email}">
+            Click here to activate your account
+        </a>
+    </p>
+    <p>If you didn't request this, please ignore this email.</p>
+</body>
+</html>
+                """,
+                )
+                token_data = self.token_serializer.serialize(
+                    token_account_active.account_active, token_email_is_null=True
+                )
             return (
                 jsonify(
                     {
                         "message": "user registered successfully",
-                        "data": user_serializer,
-                        "token": token_serializer,
+                        "data": user_me,
+                        "token": token_data,
                     }
                 ),
                 201,
